@@ -27,7 +27,7 @@ import {
 
 export type QueueState = "pending" | "inflight" | "delivered";
 export type DeliveryState = "delivered" | "delivered-merged";
-export const CLI_PROTOCOL_VERSION = 1;
+export const CLI_PROTOCOL_VERSION = 2;
 
 export interface ClaudePeerRecord {
   schemaVersion: 1;
@@ -88,9 +88,9 @@ export interface LedgerEntry {
   processedAt: string | null;
 }
 
-export interface BridgeStatus {
-  protocol: 1;
-  bridgeActive: boolean;
+export interface GluevaStatus {
+  protocol: 2;
+  active: boolean;
   unread: number;
   watcherLive: boolean;
   sessionId: string | null;
@@ -133,7 +133,7 @@ function findNearestGitRoot(start: string): string | null {
   }
 }
 
-export function resolveBridgeDir(cwd = process.cwd(), environment = process.env): string {
+export function resolveStateDir(cwd = process.cwd(), environment = process.env): string {
   const override = environment.GLUEVA_DIR;
   if (override) {
     if (!isAbsolute(override)) throw new Error("GLUEVA_DIR must be an absolute path");
@@ -143,10 +143,10 @@ export function resolveBridgeDir(cwd = process.cwd(), environment = process.env)
   return join(gitRoot ?? resolve(cwd), ".glueva");
 }
 
-export class BridgeStore {
+export class GluevaStore {
   readonly root: string;
 
-  constructor(root = resolveBridgeDir()) {
+  constructor(root = resolveStateDir()) {
     this.root = resolve(root);
   }
 
@@ -298,7 +298,7 @@ export class BridgeStore {
     try {
       const current = this.readClaudeLauncher();
       if (this.claudeLauncherIsLive(current)) {
-        throw new Error(`a Claude launcher already owns this bridge: pid ${current.pid}`);
+        throw new Error(`a Claude launcher already owns this pairing: pid ${current.pid}`);
       }
       const lease: ClaudeLauncherLease = {
         schemaVersion: SCHEMA_VERSION,
@@ -404,7 +404,7 @@ export class BridgeStore {
     return [...ids].sort();
   }
 
-  status(sessionId: string | null | undefined = undefined): BridgeStatus {
+  status(sessionId: string | null | undefined = undefined): GluevaStatus {
     const claude = this.readClaudePeer();
     let callerSessionId = sessionId;
     if (callerSessionId === undefined) {
@@ -418,16 +418,16 @@ export class BridgeStore {
       ) ? claude.sessionId : null;
     }
     const sessionMatches = Boolean(callerSessionId && claude && claude.sessionId === callerSessionId);
-    const bridgeActive = sessionMatches && this.claudePeerIsLive(claude);
-    const lease = bridgeActive ? this.watcherLease() : null;
+    const active = sessionMatches && this.claudePeerIsLive(claude);
+    const lease = active ? this.watcherLease() : null;
     const watcherLive = Boolean(
       lease && lease.schemaVersion === SCHEMA_VERSION && lease.peer === "claude" &&
         lease.sessionId === callerSessionId && isProcessLive(lease.pid),
     );
     return {
       protocol: CLI_PROTOCOL_VERSION,
-      bridgeActive,
-      unread: bridgeActive ? this.unreadIds("claude").length : 0,
+      active,
+      unread: active ? this.unreadIds("claude").length : 0,
       watcherLive,
       sessionId: claude?.sessionId ?? null,
     };
@@ -727,7 +727,7 @@ export class BridgeStore {
   }
 
   async receiveClaude(sessionId: string | null | undefined = undefined): Promise<Envelope[]> {
-    if (!this.status(sessionId).bridgeActive) throw new Error("bridge is inactive for this Claude session");
+    if (!this.status(sessionId).active) throw new Error("Glueva is inactive for this Claude session");
     const release = await this.acquireLock("claude.receive.lock");
     if (!release) throw new Error("timed out acquiring Claude receive lock");
     try {
@@ -816,7 +816,7 @@ export class BridgeStore {
   ): Promise<"mail" | "inactive" | "interrupted" | "already-armed"> {
     const initialStatus = this.status(sessionId);
     const activeSessionId = initialStatus.sessionId;
-    if (!activeSessionId || !initialStatus.bridgeActive) return "inactive";
+    if (!activeSessionId || !initialStatus.active) return "inactive";
     const token = uuidV7();
     let interrupted = false;
     const onSignal = () => {
@@ -853,7 +853,7 @@ export class BridgeStore {
       while (true) {
         if (interrupted) return "interrupted";
         const status = this.status(activeSessionId);
-        if (!status.bridgeActive) return "inactive";
+        if (!status.active) return "inactive";
         if (status.unread > 0) return "mail";
         await sleep(250);
       }

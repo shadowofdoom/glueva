@@ -4,7 +4,7 @@ import {
   injectedEnvelopeText,
   injectedTextContainsEnvelope,
 } from "./protocol";
-import { BridgeStore, type CodexPeerRecord, type DeliveryReceipt, type DeliveryState } from "./store";
+import { GluevaStore, type CodexPeerRecord, type DeliveryReceipt, type DeliveryState } from "./store";
 
 interface JsonRpcError {
   code: number;
@@ -153,7 +153,7 @@ class AppServerClient {
       clientInfo: {
         name: "glueva",
         title: "Glueva",
-        version: "0.1.2",
+        version: "0.2.0",
       },
       capabilities: {
         experimentalApi: true,
@@ -320,7 +320,7 @@ async function deliverOne(peer: CodexPeerRecord, envelope: Envelope): Promise<De
   }
 }
 
-export async function drainCodexQueue(store: BridgeStore): Promise<Map<string, DeliveryReceipt>> {
+export async function drainCodexQueue(store: GluevaStore): Promise<Map<string, DeliveryReceipt>> {
   const receipts = new Map<string, DeliveryReceipt>();
   const peer = store.readCodexPeer();
   if (!store.codexPeerIsLive(peer)) return receipts;

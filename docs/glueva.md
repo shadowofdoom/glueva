@@ -3,7 +3,7 @@
 Glueva connects one real interactive Claude Code session to one real
 interactive Codex TUI. It does not create headless agents. Both sessions remain
 human-visible and retain their normal history, tools, and keyboard input.
-It is a local, per-developer bridge: each teammate runs their own Claude/Codex
+It is a local, per-developer pairing: each teammate runs their own Claude/Codex
 pair on one machine; it is not a network relay between teammates.
 
 The shared `glueva` executable owns transport, durable queues, deduplication,
@@ -26,10 +26,10 @@ curl -fsSL https://github.com/shadowofdoom/glueva/releases/latest/download/insta
 From an authenticated checkout of this repository, the equivalent command is:
 
 ```bash
-./bridge/install.sh
+./cli/install.sh
 ```
 
-Use `--version 0.1.2` to pin the binary selected by a checkout-based install,
+Use `--version 0.2.0` to pin the binary selected by a checkout-based install,
 `--install-dir /absolute/path` to choose another PATH directory, or `--cli-only`
 to skip both plugin installations. The default install adds `~/.local/bin` to
 the current shell's startup file when needed; a custom install directory must
@@ -41,9 +41,9 @@ Python, or `jq`; the Claude hooks delegate JSON handling to that same binary.
 To build from source instead:
 
 ```bash
-bun run --cwd bridge build
+bun run --cwd cli build
 mkdir -p "$HOME/.local/bin"
-install -m 0755 bridge/dist/glueva "$HOME/.local/bin/glueva"
+install -m 0755 cli/dist/glueva "$HOME/.local/bin/glueva"
 glueva help
 ```
 
@@ -110,8 +110,8 @@ glueva codex launch \
 ```
 
 The launchers are explicit ownership boundaries. A plain `claude` or `codex`
-session never joins a bridge automatically. Only one live Claude launcher and
-one live Codex launcher may own a project's bridge.
+session never joins Glueva automatically. Only one live Claude launcher and
+one live Codex launcher may own a project's pairing.
 
 ### Claude watcher constraint
 
@@ -148,7 +148,7 @@ Stopping a launcher releases its ownership. Codex's launcher also restarts a
 failed App Server and resumes the same saved thread.
 
 After Claude registers, its launcher lease—not momentary Codex process
-liveness—defines whether that session remains bridged. The ingress watcher and
+liveness—defines whether that session remains paired. The ingress watcher and
 queued mail therefore survive Codex or App Server restarts of any duration;
 ending the Claude launcher remains terminal.
 

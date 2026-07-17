@@ -11,7 +11,7 @@ through the `glueva` CLI. Neither peer is a headless subagent.
 Pairing is explicit. The human starts this TUI with `glueva codex launch` and
 starts Claude with `glueva claude launch -- [Claude arguments]` from the same
 project. A plain `codex` or `claude` session never attaches automatically. Do
-not try to retrofit an already-running unbridged TUI.
+not try to retrofit an already-running unpaired TUI.
 
 **The CLI is the only writer.** Never hand-create, edit, move, or delete files
 under `.glueva/`. If the CLI lacks a required operation, tell the user instead
@@ -60,6 +60,6 @@ transport state; a later human-approved continuation opens a new conversation.
 
 ## When inactive
 
-Most sessions are not paired. Do not register or launch the bridge implicitly.
+Most sessions are not paired. Do not register or launch Glueva implicitly.
 Pairing is a deliberate human action performed by the two launchers. Without
 their live ownership records the CLI remains inert.

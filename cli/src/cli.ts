@@ -6,7 +6,7 @@ import { drainCodexQueue } from "./app-server";
 import { type ClaudeHookEvent, runClaudeHook } from "./claude-hooks";
 import { launchClaude, launchCodex } from "./launcher";
 import { MAX_HOP_LIMIT, type EnvelopeStatus, type Peer, isUuidV7 } from "./protocol";
-import { BridgeStore, type DeliveryState, resolveBridgeDir } from "./store";
+import { CLI_PROTOCOL_VERSION, GluevaStore, type DeliveryState, resolveStateDir } from "./store";
 import packageMetadata from "../package.json";
 
 const CLI_VERSION = packageMetadata.version;
@@ -82,7 +82,7 @@ function writeJson(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value)}\n`);
 }
 
-async function send(store: BridgeStore, arguments_: ParsedArguments): Promise<void> {
+async function send(store: GluevaStore, arguments_: ParsedArguments): Promise<void> {
   const to = peerOption(arguments_, "to");
   const status = statusOption(arguments_, "continue");
   const maxHop = integerOption(arguments_, "max-hop") ?? MAX_HOP_LIMIT;
@@ -96,14 +96,14 @@ async function send(store: BridgeStore, arguments_: ParsedArguments): Promise<vo
   });
 }
 
-async function reply(store: BridgeStore, arguments_: ParsedArguments): Promise<void> {
+async function reply(store: GluevaStore, arguments_: ParsedArguments): Promise<void> {
   const parentId = option(arguments_, "to", true)!;
   if (!isUuidV7(parentId)) throw new Error("--to must be a lowercase UUIDv7 envelope id");
   const envelope = await store.reply(parentId, bodyFromFile(arguments_), statusOption(arguments_, "done"));
   if (envelope.to === "codex") await drainCodexQueue(store);
 }
 
-async function register(store: BridgeStore, arguments_: ParsedArguments): Promise<void> {
+async function register(store: GluevaStore, arguments_: ParsedArguments): Promise<void> {
   const peer = peerOption(arguments_, "peer");
   if (peer === "claude") {
     const launcherToken = option(arguments_, "launcher-token", true)!;
@@ -132,7 +132,7 @@ async function register(store: BridgeStore, arguments_: ParsedArguments): Promis
 }
 
 function help(): void {
-  process.stdout.write(`Glueva ${CLI_VERSION} (protocol 1)\n\n` +
+  process.stdout.write(`Glueva ${CLI_VERSION} (protocol ${CLI_PROTOCOL_VERSION})\n\n` +
     `Commands:\n` +
     `  glueva status --json\n` +
     `  glueva wait\n` +
@@ -158,7 +158,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     }
     const isLaunch = (command === "claude" || command === "codex") && parsed.positionals[1] === "launch";
     const launchCwd = isLaunch ? option(parsed, "cwd") ?? process.cwd() : process.cwd();
-    const store = new BridgeStore(isLaunch ? resolveBridgeDir(launchCwd) : undefined);
+    const store = new GluevaStore(isLaunch ? resolveStateDir(launchCwd) : undefined);
     switch (command) {
       case "status":
         writeJson(store.status());

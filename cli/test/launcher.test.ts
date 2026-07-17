@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { BridgeStore } from "../src/store";
+import { GluevaStore } from "../src/store";
 
 const roots: string[] = [];
 
@@ -20,7 +20,7 @@ describe("interactive launchers", () => {
     mkdirSync(join(project, ".git"), { recursive: true });
     mkdirSync(bin);
 
-    const store = new BridgeStore(join(project, ".glueva"));
+    const store = new GluevaStore(join(project, ".glueva"));
     store.registerCodex({
       threadId: "018f4e1a-2b3c-7abc-8def-0123456789ab",
       endpoint: "ws://127.0.0.1:1",
@@ -84,7 +84,7 @@ await Bun.sleep(150);
       "Initialize Glueva for this live interactive session. Follow the Glueva SOP: " +
         "run `glueva receive --json`, handle and close every pending envelope with `glueva reply` or `glueva ack`, " +
         "then launch `glueva wait` as a harness-tracked background task and go idle. " +
-        "If the bridge is inactive, report that clearly instead of arming.",
+        "If Glueva is inactive, report that clearly instead of arming.",
     ]);
     expect(readFileSync(join(project, ".glueva", ".gitignore"), "utf8")).toBe("*\n");
     expect(store.readClaudePeer()).toBeNull();
@@ -96,7 +96,7 @@ await Bun.sleep(150);
     roots.push(root);
     const project = join(root, "project");
     mkdirSync(join(project, ".git"), { recursive: true });
-    const store = new BridgeStore(join(project, ".glueva"));
+    const store = new GluevaStore(join(project, ".glueva"));
     store.registerCodex({
       threadId: "018f4e1a-2b3c-7abc-8def-0123456789ab",
       endpoint: "ws://127.0.0.1:1",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/shadowofdoom/glueva/main/bridge/schema/envelope.schema.json",
+  "$id": "https://raw.githubusercontent.com/shadowofdoom/glueva/main/cli/schema/envelope.schema.json",
   "title": "Glueva Envelope v1",
   "type": "object",
   "additionalProperties": false,

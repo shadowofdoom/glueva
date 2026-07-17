@@ -11,7 +11,7 @@ use_gh=0
 
 usage() {
   printf '%s\n' \
-    'Usage: bridge/install.sh [--version VERSION] [--install-dir PATH] [--repo OWNER/REPO] [--cli-only]' \
+    'Usage: install.sh [--version VERSION] [--install-dir PATH] [--repo OWNER/REPO] [--cli-only]' \
     '' \
     'Installs the standalone CLI and both marketplace plugins. Uses authenticated' \
     '`gh release download` when available,' \

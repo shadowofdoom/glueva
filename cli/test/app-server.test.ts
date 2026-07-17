@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { drainCodexQueue } from "../src/app-server";
 import { injectedEnvelopeText } from "../src/protocol";
-import { BridgeStore } from "../src/store";
+import { GluevaStore } from "../src/store";
 
 const roots: string[] = [];
 const servers: Array<ReturnType<typeof Bun.serve>> = [];
@@ -75,10 +75,10 @@ function mockAppServer(state: MockState): ReturnType<typeof Bun.serve> {
   return server;
 }
 
-function makeStore(server: ReturnType<typeof Bun.serve>): BridgeStore {
+function makeStore(server: ReturnType<typeof Bun.serve>): GluevaStore {
   const root = mkdtempSync(join(tmpdir(), "glueva-app-server-"));
   roots.push(root);
-  const store = new BridgeStore(root);
+  const store = new GluevaStore(root);
   store.registerCodex({
     threadId: "018f4e1a-2b3c-7abc-8def-0123456789ab",
     endpoint: `ws://127.0.0.1:${server.port}`,

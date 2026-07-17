@@ -1,2 +1,0 @@
-GLUEVA/1 id=018f4e1a-2b3c-7abc-8def-0123456789ab
-{"schemaVersion":1,"id":"018f4e1a-2b3c-7abc-8def-0123456789ab","conversationId":"018f4e1a-2b3c-7abc-8def-0123456789ab","from":"claude","to":"codex","replyTo":null,"hop":0,"maxHop":6,"status":"continue","body":"Please review the bridge contract."}

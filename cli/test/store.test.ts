@@ -2,17 +2,17 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { BridgeStore } from "../src/store";
+import { GluevaStore } from "../src/store";
 
 const roots: string[] = [];
 
-function makeStore(): BridgeStore {
+function makeStore(): GluevaStore {
   const root = mkdtempSync(join(tmpdir(), "glueva-store-"));
   roots.push(root);
-  return new BridgeStore(root);
+  return new GluevaStore(root);
 }
 
-async function activate(store: BridgeStore, sessionId = "claude-test-session"): Promise<void> {
+async function activate(store: GluevaStore, sessionId = "claude-test-session"): Promise<void> {
   store.registerCodex({
     threadId: "018f4e1a-2b3c-7abc-8def-0123456789ab",
     endpoint: "ws://127.0.0.1:1",
@@ -41,30 +41,30 @@ describe("durable store", () => {
     expect(result.exitCode).toBe(0);
     expect(result.stderr.toString()).toBe("");
     expect(JSON.parse(result.stdout.toString())).toEqual({
-      protocol: 1,
-      bridgeActive: false,
+      protocol: 2,
+      active: false,
       unread: 0,
       watcherLive: false,
       sessionId: null,
     });
     const version = Bun.spawnSync([link, "--version"]);
     expect(version.exitCode).toBe(0);
-    expect(version.stdout.toString()).toBe("0.1.2\n");
+    expect(version.stdout.toString()).toBe("0.2.0\n");
   });
 
   test("status is session-bound and counts unprocessed mail across queue states", async () => {
     const store = makeStore();
     await activate(store);
     expect(store.status("another-session")).toEqual({
-      protocol: 1,
-      bridgeActive: false,
+      protocol: 2,
+      active: false,
       unread: 0,
       watcherLive: false,
       sessionId: "claude-test-session",
     });
 
     await store.createRootEnvelope("claude", "hello", "continue", 6);
-    expect(store.status("claude-test-session")).toMatchObject({ bridgeActive: true, unread: 1 });
+    expect(store.status("claude-test-session")).toMatchObject({ active: true, unread: 1 });
     const received = await store.receiveClaude("claude-test-session");
     expect(received).toHaveLength(1);
     expect(store.status("claude-test-session").unread).toBe(1);
@@ -201,7 +201,7 @@ describe("durable store", () => {
       appServerPid: 999_999_999,
     })}\n`);
     await Bun.sleep(300);
-    expect(store.status("claude-test-session")).toMatchObject({ bridgeActive: true, watcherLive: true });
+    expect(store.status("claude-test-session")).toMatchObject({ active: true, watcherLive: true });
 
     store.registerCodex({
       threadId: codex.threadId,
@@ -286,7 +286,7 @@ describe("durable store", () => {
     const launcher = await store.beginClaudeLaunch(process.cwd());
     await expect(store.beginClaudeLaunch(process.cwd())).rejects.toThrow("already owns");
     store.registerClaude("session", process.cwd(), launcher.pid, launcher.token);
-    expect(store.status("session").bridgeActive).toBe(true);
+    expect(store.status("session").active).toBe(true);
     const waiting = store.waitForClaude("session");
     const deadline = Date.now() + 2_000;
     while (!store.status("session").watcherLive && Date.now() < deadline) {
@@ -295,6 +295,6 @@ describe("durable store", () => {
     expect(store.status("session").watcherLive).toBe(true);
     store.endClaudeLaunch(launcher.token);
     expect(await waiting).toBe("inactive");
-    expect(store.status("session")).toMatchObject({ bridgeActive: false, sessionId: null });
+    expect(store.status("session")).toMatchObject({ active: false, sessionId: null });
   });
 });

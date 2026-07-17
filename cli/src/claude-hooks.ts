@@ -1,4 +1,4 @@
-import { CLI_PROTOCOL_VERSION, BridgeStore } from "./store";
+import { CLI_PROTOCOL_VERSION, GluevaStore } from "./store";
 
 export type ClaudeHookEvent = "session-start" | "stop";
 
@@ -64,7 +64,7 @@ export function runClaudeHook(
   event: ClaudeHookEvent,
   inputText: string,
   pluginProtocol: number,
-  store: BridgeStore,
+  store: GluevaStore,
   environment: NodeJS.ProcessEnv = process.env,
 ): HookOutput {
   if (pluginProtocol !== CLI_PROTOCOL_VERSION) {
@@ -87,7 +87,7 @@ export function runClaudeHook(
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
         return sessionStartContext(
-          `glueva: registration FAILED (${detail}). This session was started by \`glueva claude launch\` but is NOT bridged — Codex cannot reach you and its messages will not wake you. Do not assume the bridge is live.`,
+          `glueva: registration FAILED (${detail}). This session was started by \`glueva claude launch\` but is NOT paired — Codex cannot reach you and its messages will not wake you. Do not assume Glueva is live.`,
         );
       }
     }
@@ -101,7 +101,7 @@ export function runClaudeHook(
   } catch (error) {
     return incompatible(event, `state is unreadable (${error instanceof Error ? error.message : String(error)})`);
   }
-  if (!status.bridgeActive) return null;
+  if (!status.active) return null;
 
   if (event === "session-start") {
     return activeSessionContext(status.unread, status.watcherLive);

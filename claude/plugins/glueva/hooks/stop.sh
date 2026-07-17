@@ -4,7 +4,7 @@
 
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./bridge-common.sh
-. "${DIR}/bridge-common.sh"
+# shellcheck source=./common.sh
+. "${DIR}/common.sh"
 
-run_bridge_hook stop
+run_hook stop

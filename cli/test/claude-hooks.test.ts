@@ -3,17 +3,17 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runClaudeHook } from "../src/claude-hooks";
-import { BridgeStore } from "../src/store";
+import { GluevaStore } from "../src/store";
 
 const roots: string[] = [];
 
-function makeStore(): BridgeStore {
+function makeStore(): GluevaStore {
   const root = mkdtempSync(join(tmpdir(), "glueva-hooks-"));
   roots.push(root);
-  return new BridgeStore(root);
+  return new GluevaStore(root);
 }
 
-function registerCodex(store: BridgeStore): void {
+function registerCodex(store: GluevaStore): void {
   store.registerCodex({
     threadId: "018f4e1a-2b3c-7abc-8def-0123456789ab",
     endpoint: "ws://127.0.0.1:1",
@@ -23,7 +23,7 @@ function registerCodex(store: BridgeStore): void {
   });
 }
 
-async function activate(store: BridgeStore, sessionId = "claude-hook-session"): Promise<void> {
+async function activate(store: GluevaStore, sessionId = "claude-hook-session"): Promise<void> {
   registerCodex(store);
   const launcher = await store.beginClaudeLaunch(process.cwd());
   store.registerClaude(sessionId, process.cwd(), launcher.pid, launcher.token);
@@ -45,15 +45,15 @@ afterEach(() => {
 describe("Claude hook integration", () => {
   test("a normal Claude session is inert", () => {
     const store = makeStore();
-    expect(runClaudeHook("session-start", input(), 1, store, {})).toBeNull();
-    expect(runClaudeHook("stop", input(), 1, store, {})).toBeNull();
+    expect(runClaudeHook("session-start", input(), 2, store, {})).toBeNull();
+    expect(runClaudeHook("stop", input(), 2, store, {})).toBeNull();
   });
 
   test("the explicit launcher registers the matching session", async () => {
     const store = makeStore();
     registerCodex(store);
     const launcher = await store.beginClaudeLaunch(process.cwd());
-    const output = runClaudeHook("session-start", input(), 1, store, {
+    const output = runClaudeHook("session-start", input(), 2, store, {
       GLUEVA_OWNER_PID: String(launcher.pid),
       GLUEVA_LAUNCH_TOKEN: launcher.token,
     });
@@ -71,7 +71,7 @@ describe("Claude hook integration", () => {
     const store = makeStore();
     registerCodex(store);
     const launcher = await store.beginClaudeLaunch(process.cwd());
-    const incomplete = runClaudeHook("session-start", input(), 1, store, {
+    const incomplete = runClaudeHook("session-start", input(), 2, store, {
       GLUEVA_OWNER_PID: String(launcher.pid),
     });
     expect(JSON.stringify(incomplete)).toContain("registration FAILED");
@@ -79,7 +79,7 @@ describe("Claude hook integration", () => {
 
     const otherCwd = join(store.root, "other-cwd");
     mkdirSync(otherCwd);
-    const wrongCwd = runClaudeHook("session-start", input({ cwd: otherCwd }), 1, store, {
+    const wrongCwd = runClaudeHook("session-start", input({ cwd: otherCwd }), 2, store, {
       GLUEVA_OWNER_PID: String(launcher.pid),
       GLUEVA_LAUNCH_TOKEN: launcher.token,
     });
@@ -89,9 +89,10 @@ describe("Claude hook integration", () => {
 
   test("protocol skew is loud but never blocks Stop", () => {
     const store = makeStore();
-    const start = runClaudeHook("session-start", "{}", 2, store, {});
-    const stop = runClaudeHook("stop", "{}", 2, store, {});
-    expect(JSON.stringify(start)).toContain("requires 2");
+    const start = runClaudeHook("session-start", "{}", 1, store, {});
+    const stop = runClaudeHook("stop", "{}", 1, store, {});
+    expect(JSON.stringify(start)).toContain("speaks protocol 2");
+    expect(JSON.stringify(start)).toContain("requires 1");
     expect(stop).toMatchObject({ systemMessage: expect.any(String) });
     expect(stop).not.toHaveProperty("decision");
   });
@@ -99,10 +100,10 @@ describe("Claude hook integration", () => {
   test("unread mail and a missing watcher block Stop", async () => {
     const store = makeStore();
     await activate(store);
-    expect(runClaudeHook("stop", input(), 1, store, {})).toMatchObject({ decision: "block" });
+    expect(runClaudeHook("stop", input(), 2, store, {})).toMatchObject({ decision: "block" });
 
     await store.createRootEnvelope("claude", "pending", "done", 6);
-    const output = runClaudeHook("stop", input(), 1, store, {});
+    const output = runClaudeHook("stop", input(), 2, store, {});
     expect(output).toMatchObject({
       decision: "block",
       hookSpecificOutput: {
@@ -113,7 +114,7 @@ describe("Claude hook integration", () => {
     expect(JSON.stringify(output)).toContain("1 unprocessed");
 
     await store.ack((await store.receiveClaude("claude-hook-session"))[0].id);
-    const watcherOutput = runClaudeHook("stop", input(), 1, store, {});
+    const watcherOutput = runClaudeHook("stop", input(), 2, store, {});
     expect(watcherOutput).toMatchObject({
       decision: "block",
       hookSpecificOutput: {
@@ -128,7 +129,7 @@ describe("Claude hook integration", () => {
       tuiPid: 999_999_999,
       appServerPid: 999_999_999,
     })}\n`);
-    expect(runClaudeHook("stop", input(), 1, store, {})).toMatchObject({ decision: "block" });
+    expect(runClaudeHook("stop", input(), 2, store, {})).toMatchObject({ decision: "block" });
   });
 
   test("an armed and drained session may stop", async () => {
@@ -139,7 +140,7 @@ describe("Claude hook integration", () => {
     while (!store.status("claude-hook-session").watcherLive && Date.now() < deadline) {
       await Bun.sleep(10);
     }
-    expect(runClaudeHook("stop", input(), 1, store, {})).toBeNull();
+    expect(runClaudeHook("stop", input(), 2, store, {})).toBeNull();
     await store.createRootEnvelope("claude", "wake", "done", 6);
     expect(await waiting).toBe("mail");
   });
@@ -148,18 +149,18 @@ describe("Claude hook integration", () => {
     const store = makeStore();
     await activate(store);
     await store.createRootEnvelope("claude", "pending", "done", 6);
-    expect(runClaudeHook("stop", input({ stop_hook_active: true }), 1, store, {})).toBeNull();
+    expect(runClaudeHook("stop", input({ stop_hook_active: true }), 2, store, {})).toBeNull();
   });
 
-  test("cold-start mail and corrupt bridge state are surfaced", async () => {
+  test("cold-start mail and corrupt Glueva state are surfaced", async () => {
     const store = makeStore();
     await activate(store);
     await store.createRootEnvelope("claude", "cold", "done", 6);
-    const cold = runClaudeHook("session-start", input(), 1, store, {});
+    const cold = runClaudeHook("session-start", input(), 2, store, {});
     expect(JSON.stringify(cold)).toContain("1 unprocessed");
 
     writeFileSync(join(store.root, "peers", "claude.json"), "not-json\n");
-    const corrupt = runClaudeHook("stop", input(), 1, store, {});
+    const corrupt = runClaudeHook("stop", input(), 2, store, {});
     expect(corrupt).toMatchObject({ systemMessage: expect.any(String) });
     expect(corrupt).not.toHaveProperty("decision");
   });

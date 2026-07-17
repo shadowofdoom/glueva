@@ -3,7 +3,7 @@ import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { drainCodexQueue, listLoadedThreads } from "./app-server";
-import { BridgeStore } from "./store";
+import { GluevaStore } from "./store";
 
 interface LaunchOptions {
   cwd: string;
@@ -22,7 +22,7 @@ const CLAUDE_BOOTSTRAP_PROMPT =
   "Initialize Glueva for this live interactive session. Follow the Glueva SOP: " +
   "run `glueva receive --json`, handle and close every pending envelope with `glueva reply` or `glueva ack`, " +
   "then launch `glueva wait` as a harness-tracked background task and go idle. " +
-  "If the bridge is inactive, report that clearly instead of arming.";
+  "If Glueva is inactive, report that clearly instead of arming.";
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
@@ -112,7 +112,7 @@ async function stopProcess(process_: Bun.Subprocess): Promise<void> {
 }
 
 async function reportMissingClaudeRegistration(
-  store: BridgeStore,
+  store: GluevaStore,
   token: string,
   process_: Bun.Subprocess,
 ): Promise<void> {
@@ -130,7 +130,7 @@ async function reportMissingClaudeRegistration(
 }
 
 async function superviseCodexQueue(
-  store: BridgeStore,
+  store: GluevaStore,
   isRunning: () => boolean,
 ): Promise<void> {
   while (isRunning()) {
@@ -145,7 +145,7 @@ async function superviseCodexQueue(
   }
 }
 
-export async function launchClaude(store: BridgeStore, options: ClaudeLaunchOptions): Promise<number> {
+export async function launchClaude(store: GluevaStore, options: ClaudeLaunchOptions): Promise<number> {
   if (options.args.some((argument) =>
     argument === "-p" ||
     argument === "--print" ||
@@ -198,7 +198,7 @@ export async function launchClaude(store: BridgeStore, options: ClaudeLaunchOpti
   }
 }
 
-export async function launchCodex(store: BridgeStore, options: LaunchOptions): Promise<number> {
+export async function launchCodex(store: GluevaStore, options: LaunchOptions): Promise<number> {
   const cwd = realpathSync(resolve(options.cwd));
   const endpoint = options.endpoint ?? `ws://127.0.0.1:${await availableLoopbackPort()}`;
   if (!endpoint.startsWith("ws://127.0.0.1:") && !endpoint.startsWith("ws://localhost:")) {
