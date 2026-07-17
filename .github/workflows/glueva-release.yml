@@ -66,8 +66,8 @@ jobs:
           build_windows bun-windows-arm64 arm64
           build_windows bun-windows-x64-baseline x64
 
-          cp cli/install.sh release/install.sh
-          (cd release && sha256sum glueva-* install.sh > checksums.txt)
+          cp cli/install.sh cli/uninstall.sh release/
+          (cd release && sha256sum glueva-* install.sh uninstall.sh > checksums.txt)
 
       - name: Publish GitHub release
         env:

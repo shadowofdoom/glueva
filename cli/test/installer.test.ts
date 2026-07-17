@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 
@@ -89,11 +89,26 @@ esac
   executable(join(bin, "claude"), `#!/bin/sh
 set -eu
 printf 'claude %s\\n' "$*" >> "\${GLUEVA_TEST_LOG}"
+if [ "\${GLUEVA_TEST_REMOVE_FAIL:-0}" = 1 ] && [ "$*" = 'plugin uninstall glueva@glueva --scope user' ]; then
+  exit 9
+fi
+if [ "\${GLUEVA_TEST_MODE}" = project ]; then
+  case "$*" in
+    'plugin uninstall glueva@glueva --scope user')
+      printf 'Plugin is enabled at project scope\\n' >&2; exit 1 ;;
+    'plugin marketplace remove glueva --scope user')
+      printf 'Marketplace is not declared in user settings\\n' >&2; exit 1 ;;
+  esac
+fi
 case "$*" in
   'plugin marketplace list --json')
-    if [ "\${GLUEVA_TEST_MODE}" = update ]; then printf '[{"name":"glueva"}]\\n'; else printf '[]\\n'; fi ;;
+    if [ "\${GLUEVA_TEST_MODE}" = fresh ]; then printf '[]\\n'; else printf '[{"name":"glueva"}]\\n'; fi ;;
   'plugin list --json')
-    if [ "\${GLUEVA_TEST_MODE}" = update ]; then printf '[{"id":"glueva@glueva"}]\\n'; else printf '[]\\n'; fi ;;
+    case "\${GLUEVA_TEST_MODE}" in
+      update) printf '[{"id":"glueva@glueva","scope":"user"}]\\n' ;;
+      project) printf '[{"id":"glueva@glueva","scope":"project"}]\\n' ;;
+      *) printf '[]\\n' ;;
+    esac ;;
 esac
 `);
   executable(join(bin, "codex"), `#!/bin/sh
@@ -132,6 +147,28 @@ function runInstaller(
       GLUEVA_TEST_LOG: setup.log,
       GLUEVA_TEST_MODE: mode,
       GLUEVA_TEST_GH_AUTH: ghAuthenticated ? "1" : "0",
+      ...environment,
+    },
+  });
+}
+
+function runUninstaller(
+  setup: Awaited<ReturnType<typeof fixture>>,
+  mode: "fresh" | "update" | "project",
+  extraArguments: string[] = [],
+  environment: Record<string, string> = {},
+): ReturnType<typeof Bun.spawnSync> {
+  return Bun.spawnSync([
+    "bash",
+    join(import.meta.dir, "..", "uninstall.sh"),
+    ...extraArguments,
+  ], {
+    env: {
+      ...process.env,
+      HOME: setup.home,
+      PATH: `${setup.bin}:/usr/bin:/bin`,
+      GLUEVA_TEST_LOG: setup.log,
+      GLUEVA_TEST_MODE: mode,
       ...environment,
     },
   });
@@ -207,5 +244,85 @@ describe("release installer", () => {
       expect(result.exitCode).toBe(0);
       expect(readFileSync(join(setup.home, profile), "utf8")).toContain(line);
     }
+  });
+});
+
+describe("release uninstaller", () => {
+  test("removes plugins and the CLI idempotently while preserving user data", async () => {
+    const setup = await fixture();
+    expect(runInstaller(setup, "fresh").exitCode).toBe(0);
+    writeFileSync(setup.log, "");
+    const projectData = join(setup.root, "project", ".glueva", "mail.json");
+    mkdirSync(join(setup.root, "project", ".glueva"), { recursive: true });
+    writeFileSync(projectData, "keep\n");
+    const profile = join(setup.home, ".zshrc");
+    const profileBefore = readFileSync(profile, "utf8");
+
+    const result = runUninstaller(setup, "update");
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr.toString()).toBe("");
+    expect(existsSync(join(setup.install, "glueva"))).toBe(false);
+    expect(readFileSync(profile, "utf8")).toBe(profileBefore);
+    expect(readFileSync(projectData, "utf8")).toBe("keep\n");
+    expect(result.stdout.toString()).toContain("Preserved shell PATH configuration and project .glueva data.");
+    expect(readFileSync(setup.log, "utf8")).toBe([
+      "claude plugin list --json",
+      "claude plugin uninstall glueva@glueva --scope user",
+      "claude plugin marketplace list --json",
+      "claude plugin marketplace remove glueva --scope user",
+      "codex plugin list --json",
+      "codex plugin remove glueva@glueva-codex",
+      "codex plugin marketplace list --json",
+      "codex plugin marketplace remove glueva-codex",
+      "",
+    ].join("\n"));
+
+    writeFileSync(setup.log, "");
+    const repeated = runUninstaller(setup, "fresh");
+    expect(repeated.exitCode).toBe(0);
+    expect(repeated.stdout.toString()).toContain(`Glueva CLI is not installed in ${setup.install}`);
+    expect(readFileSync(setup.log, "utf8")).toBe([
+      "claude plugin list --json",
+      "claude plugin marketplace list --json",
+      "codex plugin list --json",
+      "codex plugin marketplace list --json",
+      "",
+    ].join("\n"));
+  });
+
+  test("supports a custom install directory", async () => {
+    const setup = await fixture();
+    const custom = join(setup.root, "custom-bin");
+    expect(runInstaller(setup, "fresh", ["--cli-only", "--install-dir", custom]).exitCode).toBe(0);
+    expect(existsSync(join(custom, "glueva"))).toBe(true);
+
+    const result = runUninstaller(setup, "fresh", ["--install-dir", custom]);
+    expect(result.exitCode).toBe(0);
+    expect(existsSync(join(custom, "glueva"))).toBe(false);
+  });
+
+  test("keeps the CLI when plugin cleanup fails", async () => {
+    const setup = await fixture();
+    expect(runInstaller(setup, "fresh").exitCode).toBe(0);
+    writeFileSync(setup.log, "");
+
+    const result = runUninstaller(setup, "update", [], { GLUEVA_TEST_REMOVE_FAIL: "1" });
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr.toString()).toContain("plugin cleanup failed; kept the CLI so you can retry");
+    expect(existsSync(join(setup.install, "glueva"))).toBe(true);
+  });
+
+  test("preserves project-scoped Claude configuration", async () => {
+    const setup = await fixture();
+    expect(runInstaller(setup, "fresh", ["--cli-only"]).exitCode).toBe(0);
+    writeFileSync(setup.log, "");
+
+    const result = runUninstaller(setup, "project");
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr.toString()).toBe("");
+    expect(existsSync(join(setup.install, "glueva"))).toBe(false);
+    expect(readFileSync(setup.log, "utf8")).toContain(
+      "claude plugin marketplace remove glueva --scope user\n",
+    );
   });
 });

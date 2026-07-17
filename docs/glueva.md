@@ -29,7 +29,7 @@ From an authenticated checkout of this repository, the equivalent command is:
 ./cli/install.sh
 ```
 
-Use `--version 0.3.0` to pin the binary selected by a checkout-based install,
+Use `--version 0.4.0` to pin the binary selected by a checkout-based install,
 `--install-dir /absolute/path` to choose another PATH directory, or `--cli-only`
 to skip both plugin installations. The default install adds `~/.local/bin` to
 the current shell's startup file when needed; a custom install directory must
@@ -46,6 +46,20 @@ mkdir -p "$HOME/.local/bin"
 install -m 0755 cli/dist/glueva "$HOME/.local/bin/glueva"
 glueva help
 ```
+
+## Uninstall Glueva
+
+Remove the CLI and paired user-scoped plugins and marketplace declarations with:
+
+```bash
+curl -fsSL https://github.com/shadowofdoom/glueva/releases/latest/download/uninstall.sh | bash
+```
+
+From a checkout, run `./cli/uninstall.sh` instead. Pass the same
+`--install-dir /absolute/path` used for a custom installation. Uninstalling
+preserves shell PATH configuration and every project's `.glueva/` data. If an
+agent CLI is unavailable, its plugin cleanup is skipped with a warning.
+Project- and local-scoped Claude declarations are left intact.
 
 ## Manual plugin installation
 
