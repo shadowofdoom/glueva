@@ -227,5 +227,6 @@ if [ "${install_plugins}" -eq 1 ]; then
   install_codex_plugin
   printf '%s\n' \
     'Installed the paired Claude Code and Codex plugins.' \
-    'Restart both CLIs, then run `glueva codex` followed by `glueva claude` in your project.'
+    'Restart both CLIs, then run `glueva codex` followed by `glueva claude` in your project.' \
+    'Later, run `glueva update` to update or `glueva uninstall` to remove Glueva.'
 fi
