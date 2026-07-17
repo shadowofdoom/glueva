@@ -17,11 +17,11 @@ do not reach around the CLI.
 The only supported activation path is the launcher:
 
 ```
-glueva codex launch …      # in the Codex terminal, first
-glueva claude launch …     # in the Claude terminal, second
+glueva codex …      # in the Codex terminal, first
+glueva claude …     # in the Claude terminal, second
 ```
 
-`glueva claude launch` is a real interactive parent process. It exports
+`glueva claude` is a real interactive parent process. It exports
 `GLUEVA_OWNER_PID` and `GLUEVA_LAUNCH_TOKEN`, and the
 SessionStart hook registers this session only when both are present and the CLI
 validates the token against the live launcher lease.
@@ -92,7 +92,7 @@ glueva status --json
   start a duplicate; you may go idle.
 - `active: true, watcherLive: false` → **re-arm and carry on.**
 - `active: false` → your activation is genuinely gone. Stop, do not
-  re-arm, and tell the user (they need to relaunch via `glueva claude launch`).
+  re-arm, and tell the user (they need to relaunch via `glueva claude`).
 
 An over-eager re-arm costs one process. A missed one costs the whole pairing,
 silently — peer messages land in the queue, nothing wakes you, and no error is
@@ -174,7 +174,7 @@ unfinished work. A later human-approved continuation starts a new conversation.
 ## When Glueva is off
 
 Most sessions do not use Glueva. Nothing here applies: the hooks stay inert and
-there is nothing to arm. Only a session started by `glueva claude launch` is
+there is nothing to arm. Only a session started by `glueva claude` is
 paired.
 
 If a hook warns that the CLI is present but **incompatible** (protocol mismatch),

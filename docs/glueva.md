@@ -29,7 +29,7 @@ From an authenticated checkout of this repository, the equivalent command is:
 ./cli/install.sh
 ```
 
-Use `--version 0.2.0` to pin the binary selected by a checkout-based install,
+Use `--version 0.3.0` to pin the binary selected by a checkout-based install,
 `--install-dir /absolute/path` to choose another PATH directory, or `--cli-only`
 to skip both plugin installations. The default install adds `~/.local/bin` to
 the current shell's startup file when needed; a custom install directory must
@@ -68,19 +68,20 @@ Start Codex first from the project you want both sessions to share:
 
 ```bash
 cd /absolute/path/to/project
-glueva codex launch --yolo
+glueva codex --yolo
 ```
 
 Then use a second terminal in the same project to start Claude:
 
 ```bash
 cd /absolute/path/to/project
-glueva claude launch -- --dangerously-skip-permissions
+glueva claude --dangerously-skip-permissions
 ```
 
 The launcher owns Claude's initial prompt so it can drain pending mail and arm
-the ingress watcher before the session first goes idle. Pass Claude flags after
-`--`; write flags with values in long form as one token (`--option=value`). For
+the ingress watcher before the session first goes idle. Pass Claude flags
+directly after `glueva claude`; write flags with values in long form as one
+token (`--option=value`). For
 multi-value options, repeat the flag once per value, such as
 `--add-dir=/first --add-dir=/second`. Positional prompts, loose flag values,
 value-taking short flags, and non-interactive flags such as `--print` or
@@ -89,13 +90,13 @@ value-taking short flags, and non-interactive flags such as `--print` or
 To keep working in the most recent Claude conversation for the project:
 
 ```bash
-glueva claude launch -- --continue --dangerously-skip-permissions
+glueva claude --continue --dangerously-skip-permissions
 ```
 
 To resume a specific conversation instead:
 
 ```bash
-glueva claude launch --cwd /absolute/path/to/project -- \
+glueva claude --cwd /absolute/path/to/project \
   --resume=<claude-session-id> \
   --dangerously-skip-permissions
 ```
@@ -103,7 +104,7 @@ glueva claude launch --cwd /absolute/path/to/project -- \
 Likewise, resume a saved Codex thread with:
 
 ```bash
-glueva codex launch \
+glueva codex \
   --cwd /absolute/path/to/project \
   --resume <codex-thread-id> \
   --yolo

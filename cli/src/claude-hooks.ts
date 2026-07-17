@@ -87,7 +87,7 @@ export function runClaudeHook(
       } catch (error) {
         const detail = error instanceof Error ? error.message : String(error);
         return sessionStartContext(
-          `glueva: registration FAILED (${detail}). This session was started by \`glueva claude launch\` but is NOT paired — Codex cannot reach you and its messages will not wake you. Do not assume Glueva is live.`,
+          `glueva: registration FAILED (${detail}). This session was started by \`glueva claude\` but is NOT paired — Codex cannot reach you and its messages will not wake you. Do not assume Glueva is live.`,
         );
       }
     }

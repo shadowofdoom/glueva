@@ -152,13 +152,13 @@ export async function launchClaude(store: GluevaStore, options: ClaudeLaunchOpti
     argument === "--output-format" ||
     argument.startsWith("--output-format=")
   )) {
-    throw new Error("glueva claude launch requires a real interactive session; print/output modes are unsupported");
+    throw new Error("glueva claude requires a real interactive session; print/output modes are unsupported");
   }
   if (options.args.includes("--")) {
-    throw new Error("pass Claude flags only; glueva claude launch owns the initial prompt");
+    throw new Error("pass Claude flags only; glueva claude owns the initial prompt");
   }
   if (options.args.some((argument) => argument === "-" || !argument.startsWith("-"))) {
-    throw new Error("pass Claude flags only and write values with long-form --option=value; glueva claude launch owns the initial prompt");
+    throw new Error("pass Claude flags only and write values with long-form --option=value; glueva claude owns the initial prompt");
   }
   const cwd = realpathSync(resolve(options.cwd));
   const lease = await store.beginClaudeLaunch(cwd);
@@ -202,7 +202,7 @@ export async function launchCodex(store: GluevaStore, options: LaunchOptions): P
   const cwd = realpathSync(resolve(options.cwd));
   const endpoint = options.endpoint ?? `ws://127.0.0.1:${await availableLoopbackPort()}`;
   if (!endpoint.startsWith("ws://127.0.0.1:") && !endpoint.startsWith("ws://localhost:")) {
-    throw new Error("glueva codex launch requires a loopback ws:// endpoint");
+    throw new Error("glueva codex requires a loopback ws:// endpoint");
   }
 
   const current = store.readCodexPeer();

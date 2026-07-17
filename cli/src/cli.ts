@@ -21,10 +21,15 @@ function parseArguments(argv: string[]): ParsedArguments {
   const positionals: string[] = [];
   const options = new Map<string, string | true>();
   const passthrough: string[] = [];
+  const command = argv[0];
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     if (argument === "--") {
       passthrough.push(...argv.slice(index + 1));
+      break;
+    }
+    if (command === "claude" && index > 0 && argument !== "--cwd") {
+      passthrough.push(...argv.slice(index));
       break;
     }
     if (!argument.startsWith("--")) {
@@ -142,8 +147,8 @@ function help(): void {
     `  glueva ack --id ENVELOPE_ID\n` +
     `  glueva register --peer claude --session-id ID --owner-pid PID --launcher-token TOKEN [--cwd PATH] --json\n` +
     `  glueva register --peer codex --thread-id ID --endpoint WS_URL --tui-pid PID --app-server-pid PID [--cwd PATH] --json\n` +
-    `  glueva claude launch [--cwd PATH] -- [CLAUDE_ARGS...]\n` +
-    `  glueva codex launch [--resume THREAD_ID] [--cwd PATH] [--endpoint LOOPBACK_WS_URL] [--yolo] [--no-alt-screen]\n\n` +
+    `  glueva claude [--cwd PATH] [CLAUDE_FLAGS...]\n` +
+    `  glueva codex [--resume THREAD_ID] [--cwd PATH] [--endpoint LOOPBACK_WS_URL] [--yolo] [--no-alt-screen]\n\n` +
     `Plugin integration:\n` +
     `  glueva hook session-start|stop --plugin-protocol VERSION\n`);
 }
@@ -156,9 +161,9 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       process.stdout.write(`${CLI_VERSION}\n`);
       return 0;
     }
-    const isLaunch = (command === "claude" || command === "codex") && parsed.positionals[1] === "launch";
-    const launchCwd = isLaunch ? option(parsed, "cwd") ?? process.cwd() : process.cwd();
-    const store = new GluevaStore(isLaunch ? resolveStateDir(launchCwd) : undefined);
+    const launchesPeer = command === "claude" || command === "codex";
+    const launchCwd = launchesPeer ? option(parsed, "cwd") ?? process.cwd() : process.cwd();
+    const store = new GluevaStore(launchesPeer ? resolveStateDir(launchCwd) : undefined);
     switch (command) {
       case "status":
         writeJson(store.status());
@@ -195,14 +200,12 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
         return 0;
       }
       case "claude":
-        if (parsed.positionals[1] !== "launch") throw new Error("expected: glueva claude launch");
-        if (parsed.positionals.length > 2) throw new Error("pass Claude arguments after --");
         return await launchClaude(store, {
           cwd: launchCwd,
           args: parsed.passthrough,
         });
       case "codex": {
-        if (parsed.positionals[1] !== "launch") throw new Error("expected: glueva codex launch");
+        if (parsed.positionals.length > 1) throw new Error("expected: glueva codex [options]");
         const resumeThreadId = option(parsed, "resume");
         if (resumeThreadId && !isUuidV7(resumeThreadId)) {
           throw new Error("--resume must be a lowercase UUIDv7 thread id");

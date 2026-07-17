@@ -153,7 +153,7 @@ class AppServerClient {
       clientInfo: {
         name: "glueva",
         title: "Glueva",
-        version: "0.2.0",
+        version: "0.3.0",
       },
       capabilities: {
         experimentalApi: true,
@@ -236,7 +236,7 @@ function threadStatusType(thread: unknown): string | null {
 
 // Bounded on purpose. The wait is outside codex.delivery.lock, but an unbounded
 // caller still cannot return `queued` while Codex is busy. Deferring is safe:
-// `glueva codex launch` supervises the durable queue and retries after idle.
+// `glueva codex` supervises the durable queue and retries after idle.
 async function waitUntilIdle(client: AppServerClient, peer: CodexPeerRecord): Promise<void> {
   const timeoutMs = numericEnvironment("GLUEVA_IDLE_TIMEOUT_MS", 30_000);
   const deadline = Date.now() + timeoutMs;
