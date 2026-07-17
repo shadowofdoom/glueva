@@ -17,4 +17,10 @@ glueva codex
 glueva claude
 ```
 
+Uninstall just as easily:
+
+```bash
+curl -fsSL https://github.com/shadowofdoom/glueva/releases/latest/download/uninstall.sh | bash
+```
+
 See [the complete setup and usage guide](docs/glueva.md).
