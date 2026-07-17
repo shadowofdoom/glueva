@@ -1,0 +1,20 @@
+{
+  "name": "glueva-codex",
+  "interface": {
+    "displayName": "Glueva"
+  },
+  "plugins": [
+    {
+      "name": "glueva",
+      "source": {
+        "source": "local",
+        "path": "./codex/plugins/glueva"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "glueva",
+  "version": "0.1.0+codex.20260713092915",
+  "description": "Live messaging between explicitly launched real Codex and Claude Code sessions.",
+  "author": {
+    "name": "Glueva",
+    "url": "https://github.com/shadowofdoom/glueva"
+  },
+  "homepage": "https://github.com/shadowofdoom/glueva",
+  "repository": "https://github.com/shadowofdoom/glueva",
+  "license": "MIT",
+  "keywords": [
+    "bridge",
+    "claude-code",
+    "codex",
+    "live-session"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Glueva",
+    "shortDescription": "Exchange messages with a live Claude session",
+    "longDescription": "Use Glueva to exchange durable, loop-bounded messages between explicitly launched real Codex and Claude Code sessions without creating headless subagents.",
+    "developerName": "Glueva",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/shadowofdoom/glueva",
+    "privacyPolicyURL": "https://github.com/shadowofdoom/glueva",
+    "termsOfServiceURL": "https://github.com/shadowofdoom/glueva",
+    "defaultPrompt": "Use Glueva to exchange a message with the paired live Claude session.",
+    "brandColor": "#7C3AED",
+    "screenshots": []
+  }
+}

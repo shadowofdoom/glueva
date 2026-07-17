@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/shadowofdoom/glueva/main/bridge/schema/envelope.schema.json",
+  "title": "Glueva Envelope v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "conversationId",
+    "from",
+    "to",
+    "replyTo",
+    "hop",
+    "maxHop",
+    "status",
+    "body"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "$ref": "#/$defs/uuidv7"
+    },
+    "conversationId": {
+      "$ref": "#/$defs/uuidv7"
+    },
+    "from": {
+      "$ref": "#/$defs/peer"
+    },
+    "to": {
+      "$ref": "#/$defs/peer"
+    },
+    "replyTo": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/uuidv7"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "hop": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 6
+    },
+    "maxHop": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 6,
+      "default": 6
+    },
+    "status": {
+      "enum": [
+        "continue",
+        "done"
+      ]
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "$defs": {
+    "uuidv7": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+    },
+    "peer": {
+      "enum": [
+        "claude",
+        "codex"
+      ]
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "description": "Glueva ingress invariant - Claude idle implies an armed watcher. Inert unless this session is registered to a live bridge.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/bridge-session-start.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/bridge-stop.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "glueva",
+  "description": "Live session-to-session messaging between a real Claude Code session and a real Codex TUI. Keeps an ingress watcher armed so peer messages wake this session across turn boundaries.",
+  "version": "1.1.1",
+  "author": {
+    "name": "Glueva",
+    "url": "https://github.com/shadowofdoom/glueva"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "glueva",
+  "version": "0.1.2",
+  "description": "Live messaging between real Claude Code and Codex sessions.",
+  "owner": {
+    "name": "Glueva"
+  },
+  "plugins": [
+    {
+      "name": "glueva",
+      "description": "Live session-to-session messaging between a real Claude Code session and a real Codex TUI.",
+      "version": "1.1.1",
+      "author": { "name": "Glueva" },
+      "source": "./claude/plugins/glueva",
+      "category": "productivity",
+      "keywords": ["bridge", "claude-code", "codex", "live-session"]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Glueva"
+  short_description: "Exchange messages with a live Claude session"
+  default_prompt: "Use $glueva to exchange a message with the paired live Claude session."

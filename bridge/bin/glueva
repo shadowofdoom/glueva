@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SOURCE="$(realpath "${BASH_SOURCE[0]}")"
+ROOT="$(cd "$(dirname "${SOURCE}")/.." && pwd)"
+exec bun "${ROOT}/src/cli.ts" "$@"
