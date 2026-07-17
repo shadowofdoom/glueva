@@ -20,9 +20,14 @@ interface ClaudeLaunchOptions {
 
 const CLAUDE_BOOTSTRAP_PROMPT =
   "Initialize Glueva for this live interactive session. Follow the Glueva SOP: " +
-  "run `glueva receive --json`, handle and close every pending envelope with `glueva reply` or `glueva ack`, " +
-  "then launch `glueva wait` as a harness-tracked background task and go idle. " +
-  "If Glueva is inactive, report that clearly instead of arming.";
+  "run `glueva status`. If Claude is inactive, report that clearly and do not send or arm. Otherwise, " +
+  "run `glueva receive --json`, handle and close every pending envelope with `glueva reply` or `glueva ack`, then " +
+  "if Codex is active, send exactly one startup pairing check with `--status continue --max-hop 1`, asking Codex to " +
+  "reply once with `--status done`, briefly confirm pairing, and invite the user to give both agents a shared task. " +
+  "Tell the user the check was sent, " +
+  "but claim success only after that reply. If Codex is no longer active, report that and skip the check. " +
+  "Launch `glueva wait` as a harness-tracked background task before going idle. When the terminal reply arrives, " +
+  "close it, re-arm the watcher, tell the user pairing works, and ask what the pair should work on.";
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));

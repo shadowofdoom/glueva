@@ -17,6 +17,9 @@ glueva codex
 glueva claude
 ```
 
+Claude then sends Codex one pairing check, confirms the round trip, and asks
+what shared task you want both agents to work on.
+
 Update or uninstall later on macOS and Linux:
 
 ```bash
