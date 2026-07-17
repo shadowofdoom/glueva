@@ -29,7 +29,7 @@ From an authenticated checkout of this repository, the equivalent command is:
 ./cli/install.sh
 ```
 
-Use `--version 0.5.0` to pin the binary selected by a checkout-based install,
+Use `--version 0.6.0` to pin the binary selected by a checkout-based install,
 `--install-dir /absolute/path` to choose another PATH directory, or `--cli-only`
 to skip both plugin installations. The default install adds `~/.local/bin` to
 the current shell's startup file when needed; a custom install directory must
@@ -114,6 +114,10 @@ Then use a second terminal in the same project to start Claude:
 cd /absolute/path/to/project
 glueva claude --dangerously-skip-permissions
 ```
+
+On each `glueva claude` launch, Claude sends Codex one bounded pairing check
+after both sessions register. Codex replies once, Claude confirms the round
+trip, and then asks what shared task the pair should work on.
 
 From any terminal in that project, `glueva status` reports the health of the
 registered Claude session, Codex session, ingress watcher, and unread count. The

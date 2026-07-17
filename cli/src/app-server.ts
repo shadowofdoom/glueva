@@ -153,7 +153,7 @@ class AppServerClient {
       clientInfo: {
         name: "glueva",
         title: "Glueva",
-        version: "0.5.0",
+        version: "0.6.0",
       },
       capabilities: {
         experimentalApi: true,

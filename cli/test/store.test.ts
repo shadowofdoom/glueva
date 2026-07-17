@@ -49,7 +49,7 @@ describe("durable store", () => {
     });
     const version = Bun.spawnSync([link, "--version"]);
     expect(version.exitCode).toBe(0);
-    expect(version.stdout.toString()).toBe("0.5.0\n");
+    expect(version.stdout.toString()).toBe("0.6.0\n");
   });
 
   test("status is session-bound and counts unprocessed mail across queue states", async () => {
