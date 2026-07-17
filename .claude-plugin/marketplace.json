@@ -1,6 +1,6 @@
 {
   "name": "glueva",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Live messaging between real Claude Code and Codex sessions.",
   "owner": {
     "name": "Glueva"
@@ -9,7 +9,7 @@
     {
       "name": "glueva",
       "description": "Live session-to-session messaging between a real Claude Code session and a real Codex TUI.",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "author": { "name": "Glueva" },
       "source": "./claude/plugins/glueva",
       "category": "productivity",

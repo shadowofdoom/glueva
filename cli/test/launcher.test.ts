@@ -11,7 +11,28 @@ afterEach(() => {
 });
 
 describe("interactive launchers", () => {
-  test("Claude launcher resolves state from --cwd and forwards arguments after --", () => {
+  test("Codex dispatches directly without a launch subcommand", () => {
+    const root = mkdtempSync(join(tmpdir(), "glueva-codex-command-"));
+    roots.push(root);
+    const project = join(root, "project");
+    mkdirSync(join(project, ".git"), { recursive: true });
+
+    const result = Bun.spawnSync([
+      "bun",
+      join(import.meta.dir, "..", "src", "cli.ts"),
+      "codex",
+      "--cwd",
+      project,
+      "--resume",
+      "not-a-uuid",
+      "--yolo",
+    ]);
+
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr.toString()).toContain("--resume must be a lowercase UUIDv7 thread id");
+  });
+
+  test("Claude launcher resolves state from --cwd and forwards flags directly", () => {
     const root = mkdtempSync(join(tmpdir(), "glueva-launcher-"));
     roots.push(root);
     const project = join(root, "project");
@@ -55,10 +76,8 @@ await Bun.sleep(150);
       "bun",
       cli,
       "claude",
-      "launch",
       "--cwd",
       project,
-      "--",
       "--dangerously-skip-permissions",
       "--resume=session-id",
       "--add-dir=/tmp/one",
@@ -110,10 +129,8 @@ await Bun.sleep(150);
       "bun",
       cli,
       "claude",
-      "launch",
       "--cwd",
       project,
-      "--",
       "--print",
       "hello",
     ], { cwd: root });
@@ -126,10 +143,8 @@ await Bun.sleep(150);
       "bun",
       cli,
       "claude",
-      "launch",
       "--cwd",
       project,
-      "--",
       "--resume",
       "session-id",
     ], { cwd: root });

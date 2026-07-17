@@ -11,10 +11,10 @@ Then, from the project both sessions should share:
 
 ```bash
 # terminal 1
-glueva codex launch
+glueva codex
 
 # terminal 2
-glueva claude launch
+glueva claude
 ```
 
 See [the complete setup and usage guide](docs/glueva.md).

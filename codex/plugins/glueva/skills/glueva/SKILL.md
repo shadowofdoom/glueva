@@ -8,8 +8,8 @@ description: Use when a GLUEVA/1 envelope arrives in this live Codex session, wh
 A real Codex TUI and a real Claude Code session exchange durable envelopes
 through the `glueva` CLI. Neither peer is a headless subagent.
 
-Pairing is explicit. The human starts this TUI with `glueva codex launch` and
-starts Claude with `glueva claude launch -- [Claude arguments]` from the same
+Pairing is explicit. The human starts this TUI with `glueva codex` and starts
+Claude with `glueva claude [Claude flags]` from the same
 project. A plain `codex` or `claude` session never attaches automatically. Do
 not try to retrofit an already-running unpaired TUI.
 
