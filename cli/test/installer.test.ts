@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 
@@ -179,6 +188,48 @@ afterEach(() => {
 });
 
 describe("release installer", () => {
+  test("installed CLI updates and uninstalls itself through the release scripts", async () => {
+    const setup = await fixture();
+    const built = join(setup.root, "built", "glueva");
+    mkdirSync(join(setup.root, "built"));
+    const build = Bun.spawnSync([
+      "bun", "build", join(import.meta.dir, "..", "src", "cli.ts"), "--compile",
+      "--no-compile-autoload-dotenv", "--no-compile-autoload-bunfig", "--outfile", built,
+    ]);
+    expect(build.exitCode).toBe(0);
+
+    const environment = {
+      ...process.env,
+      HOME: setup.home,
+      PATH: `${setup.bin}:/usr/bin:/bin`,
+      SHELL: "/bin/zsh",
+      ZDOTDIR: setup.home,
+      GLUEVA_TEST_RELEASE_DIR: setup.release,
+      GLUEVA_TEST_LOG: setup.log,
+      GLUEVA_TEST_MODE: "update",
+    };
+
+    const updateBinary = join(setup.root, "update", "glueva");
+    mkdirSync(join(setup.root, "update"));
+    copyFileSync(built, updateBinary);
+    chmodSync(updateBinary, 0o755);
+    const update = Bun.spawnSync([updateBinary, "update"], { cwd: setup.root, env: environment });
+    expect(update.exitCode).toBe(0);
+    expect(update.stderr.toString()).toBe("");
+    expect(update.stdout.toString()).toContain("Installed Glueva 0.1.0");
+    expect(Bun.spawnSync([updateBinary, "--version"]).stdout.toString()).toBe("0.1.0\n");
+
+    const uninstallBinary = join(setup.root, "uninstall", "glueva");
+    mkdirSync(join(setup.root, "uninstall"));
+    copyFileSync(built, uninstallBinary);
+    chmodSync(uninstallBinary, 0o755);
+    const uninstall = Bun.spawnSync([uninstallBinary, "uninstall"], { cwd: setup.root, env: environment });
+    expect(uninstall.exitCode).toBe(0);
+    expect(uninstall.stderr.toString()).toBe("");
+    expect(existsSync(uninstallBinary)).toBe(false);
+    expect(existsSync(join(setup.root, ".glueva"))).toBe(false);
+  }, 20_000);
+
   test("installs fresh plugins, updates existing plugins, and supports CLI-only mode", async () => {
     const setup = await fixture();
     const fresh = runInstaller(setup, "fresh");

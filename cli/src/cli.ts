@@ -1,13 +1,15 @@
 #!/usr/bin/env bun
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, realpathSync } from "node:fs";
+import { basename, dirname, resolve } from "node:path";
 import { drainCodexQueue } from "./app-server";
 import { type ClaudeHookEvent, runClaudeHook } from "./claude-hooks";
 import { launchClaude, launchCodex } from "./launcher";
 import { MAX_HOP_LIMIT, type EnvelopeStatus, type Peer, isUuidV7 } from "./protocol";
 import { CLI_PROTOCOL_VERSION, GluevaStore, resolveStateDir } from "./store";
 import packageMetadata from "../package.json";
+import installScript from "../install.sh" with { type: "text" };
+import uninstallScript from "../uninstall.sh" with { type: "text" };
 
 const CLI_VERSION = packageMetadata.version;
 
@@ -87,6 +89,32 @@ function writeJson(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value)}\n`);
 }
 
+async function runLifecycleScript(command: "update" | "uninstall"): Promise<number> {
+  const [scriptName, script] = command === "update"
+    ? ["install.sh", installScript]
+    : ["uninstall.sh", uninstallScript];
+  if (process.platform === "win32") {
+    throw new Error(
+      `${command} on Windows requires an external process; run: curl -fsSL ` +
+      `https://github.com/shadowofdoom/glueva/releases/latest/download/${scriptName} | bash`,
+    );
+  }
+  const executable = realpathSync(process.execPath);
+  if (basename(executable).toLowerCase() !== "glueva") {
+    throw new Error(
+      `${command} requires the installed Glueva executable; from this checkout, run ./cli/${scriptName}`,
+    );
+  }
+  const bash = Bun.which("bash");
+  if (!bash) throw new Error(`bash is required to ${command} Glueva`);
+  const child = Bun.spawn([bash, "-s", "--", "--install-dir", dirname(executable)], {
+    stdin: new Blob([script]),
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  return await child.exited;
+}
+
 function writeDeliveryResult(store: GluevaStore, to: Peer, id: string): void {
   const receipt = store.readReceipt(to, id);
   writeJson({ id, state: receipt?.state ?? "queued" });
@@ -141,6 +169,8 @@ async function register(store: GluevaStore, arguments_: ParsedArguments): Promis
 function help(): void {
   process.stdout.write(`Glueva ${CLI_VERSION} (protocol ${CLI_PROTOCOL_VERSION})\n\n` +
     `Commands:\n` +
+    `  glueva update\n` +
+    `  glueva uninstall\n` +
     `  glueva status [--json]\n` +
     `  glueva wait\n` +
     `  glueva receive --json\n` +
@@ -162,6 +192,9 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     if (parsed.options.has("version")) {
       process.stdout.write(`${CLI_VERSION}\n`);
       return 0;
+    }
+    if (command === "update" || command === "uninstall") {
+      return await runLifecycleScript(command);
     }
     const launchesPeer = command === "claude" || command === "codex";
     const launchCwd = launchesPeer ? option(parsed, "cwd") ?? process.cwd() : process.cwd();

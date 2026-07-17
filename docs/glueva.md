@@ -29,7 +29,7 @@ From an authenticated checkout of this repository, the equivalent command is:
 ./cli/install.sh
 ```
 
-Use `--version 0.4.1` to pin the binary selected by a checkout-based install,
+Use `--version 0.5.0` to pin the binary selected by a checkout-based install,
 `--install-dir /absolute/path` to choose another PATH directory, or `--cli-only`
 to skip both plugin installations. The default install adds `~/.local/bin` to
 the current shell's startup file when needed; a custom install directory must
@@ -47,9 +47,32 @@ install -m 0755 cli/dist/glueva "$HOME/.local/bin/glueva"
 glueva help
 ```
 
+## Update Glueva
+
+Stop any running Glueva pair, then update the CLI and both plugins in place:
+
+```bash
+glueva update
+```
+
+Restart Claude Code and Codex after the update. If the installed version
+predates this command, rerun the one-line installer once. On Windows, where a
+running executable cannot replace itself, run the external installer instead:
+
+```bash
+curl -fsSL https://github.com/shadowofdoom/glueva/releases/latest/download/install.sh | bash
+```
+
 ## Uninstall Glueva
 
-Remove the CLI and paired user-scoped plugins and marketplace declarations with:
+Stop any running Glueva pair, then remove the CLI and paired user-scoped plugins
+and marketplace declarations:
+
+```bash
+glueva uninstall
+```
+
+On Windows, or if the executable is damaged or unavailable, run:
 
 ```bash
 curl -fsSL https://github.com/shadowofdoom/glueva/releases/latest/download/uninstall.sh | bash
