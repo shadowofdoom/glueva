@@ -6,7 +6,7 @@ import { drainCodexQueue } from "./app-server";
 import { type ClaudeHookEvent, runClaudeHook } from "./claude-hooks";
 import { launchClaude, launchCodex } from "./launcher";
 import { MAX_HOP_LIMIT, type EnvelopeStatus, type Peer, isUuidV7 } from "./protocol";
-import { CLI_PROTOCOL_VERSION, GluevaStore, type DeliveryState, resolveStateDir } from "./store";
+import { CLI_PROTOCOL_VERSION, GluevaStore, resolveStateDir } from "./store";
 import packageMetadata from "../package.json";
 
 const CLI_VERSION = packageMetadata.version;
@@ -87,6 +87,11 @@ function writeJson(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value)}\n`);
 }
 
+function writeDeliveryResult(store: GluevaStore, to: Peer, id: string): void {
+  const receipt = store.readReceipt(to, id);
+  writeJson({ id, state: receipt?.state ?? "queued" });
+}
+
 async function send(store: GluevaStore, arguments_: ParsedArguments): Promise<void> {
   const to = peerOption(arguments_, "to");
   const status = statusOption(arguments_, "continue");
@@ -94,11 +99,7 @@ async function send(store: GluevaStore, arguments_: ParsedArguments): Promise<vo
   if (maxHop < 0 || maxHop > MAX_HOP_LIMIT) throw new Error("--max-hop must be from 0 through 6");
   const envelope = await store.createRootEnvelope(to, bodyFromFile(arguments_), status, maxHop);
   if (to === "codex") await drainCodexQueue(store);
-  const receipt = store.readReceipt(to, envelope.id);
-  writeJson({
-    id: envelope.id,
-    state: (receipt?.state ?? "queued") as DeliveryState | "queued",
-  });
+  writeDeliveryResult(store, to, envelope.id);
 }
 
 async function reply(store: GluevaStore, arguments_: ParsedArguments): Promise<void> {
@@ -106,6 +107,7 @@ async function reply(store: GluevaStore, arguments_: ParsedArguments): Promise<v
   if (!isUuidV7(parentId)) throw new Error("--to must be a lowercase UUIDv7 envelope id");
   const envelope = await store.reply(parentId, bodyFromFile(arguments_), statusOption(arguments_, "done"));
   if (envelope.to === "codex") await drainCodexQueue(store);
+  writeDeliveryResult(store, envelope.to, envelope.id);
 }
 
 async function register(store: GluevaStore, arguments_: ParsedArguments): Promise<void> {
@@ -139,7 +141,7 @@ async function register(store: GluevaStore, arguments_: ParsedArguments): Promis
 function help(): void {
   process.stdout.write(`Glueva ${CLI_VERSION} (protocol ${CLI_PROTOCOL_VERSION})\n\n` +
     `Commands:\n` +
-    `  glueva status --json\n` +
+    `  glueva status [--json]\n` +
     `  glueva wait\n` +
     `  glueva receive --json\n` +
     `  glueva send --to claude|codex --body-file PATH [--status continue|done] [--max-hop 0..6] --json\n` +
@@ -165,9 +167,20 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     const launchCwd = launchesPeer ? option(parsed, "cwd") ?? process.cwd() : process.cwd();
     const store = new GluevaStore(launchesPeer ? resolveStateDir(launchCwd) : undefined);
     switch (command) {
-      case "status":
-        writeJson(store.status());
+      case "status": {
+        if (parsed.options.has("json")) {
+          writeJson(store.status());
+          return 0;
+        }
+        const status = store.status(store.readClaudePeer()?.sessionId ?? null);
+        process.stdout.write(
+          `Claude: ${status.active ? "active" : "inactive"}\n` +
+          `Codex: ${store.codexPeerIsLive() ? "active" : "inactive"}\n` +
+          `Watcher: ${status.watcherLive ? "armed" : "not armed"}\n` +
+          `Unread for Claude: ${status.unread}\n`,
+        );
         return 0;
+      }
       case "wait":
         process.stdout.write(`${await store.waitForClaude()}\n`);
         return 0;

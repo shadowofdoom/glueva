@@ -29,7 +29,7 @@ From an authenticated checkout of this repository, the equivalent command is:
 ./cli/install.sh
 ```
 
-Use `--version 0.4.0` to pin the binary selected by a checkout-based install,
+Use `--version 0.4.1` to pin the binary selected by a checkout-based install,
 `--install-dir /absolute/path` to choose another PATH directory, or `--cli-only`
 to skip both plugin installations. The default install adds `~/.local/bin` to
 the current shell's startup file when needed; a custom install directory must
@@ -91,6 +91,12 @@ Then use a second terminal in the same project to start Claude:
 cd /absolute/path/to/project
 glueva claude --dangerously-skip-permissions
 ```
+
+From any terminal in that project, `glueva status` reports the health of the
+registered Claude session, Codex session, ingress watcher, and unread count. The
+`glueva status --json` form is intentionally scoped to the calling Claude
+session for plugin safety; outside that session, `active: false` and
+`watcherLive: false` do not describe the overall pair.
 
 The launcher owns Claude's initial prompt so it can drain pending mail and arm
 the ingress watcher before the session first goes idle. Pass Claude flags

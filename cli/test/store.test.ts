@@ -49,7 +49,7 @@ describe("durable store", () => {
     });
     const version = Bun.spawnSync([link, "--version"]);
     expect(version.exitCode).toBe(0);
-    expect(version.stdout.toString()).toBe("0.4.0\n");
+    expect(version.stdout.toString()).toBe("0.4.1\n");
   });
 
   test("status is session-bound and counts unprocessed mail across queue states", async () => {
@@ -70,6 +70,24 @@ describe("durable store", () => {
     expect(store.status("claude-test-session").unread).toBe(1);
     await store.ack(received[0].id);
     expect(store.status("claude-test-session").unread).toBe(0);
+  });
+
+  test("human status reports the registered pair outside Claude's session", async () => {
+    const store = makeStore();
+    await activate(store);
+    const cli = join(import.meta.dir, "..", "bin", "glueva");
+    const environment = { ...process.env, GLUEVA_DIR: store.root };
+    const result = Bun.spawnSync([cli, "status"], {
+      cwd: process.cwd(),
+      env: environment,
+    });
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr.toString()).toBe("");
+    expect(result.stdout.toString()).toBe(
+      "Claude: active\nCodex: active\nWatcher: not armed\nUnread for Claude: 0\n",
+    );
+    expect(JSON.parse(Bun.spawnSync([cli, "status", "--json"], { env: environment }).stdout.toString()))
+      .toMatchObject({ active: false, watcherLive: false, sessionId: "claude-test-session" });
   });
 
   test("receive recovers delivered but unprocessed envelopes", async () => {
@@ -105,6 +123,23 @@ describe("durable store", () => {
       replyId: reply.id,
     });
     await expect(store.reply(parent.id, "different", "done")).rejects.toThrow("conflict");
+  });
+
+  test("reply prints delivery feedback", async () => {
+    const store = makeStore();
+    const parent = await store.createRootEnvelope("codex", "question", "continue", 6);
+    const body = join(store.root, "reply.txt");
+    writeFileSync(body, "answer\n");
+    const result = Bun.spawnSync([
+      join(import.meta.dir, "..", "bin", "glueva"),
+      "reply", "--to", parent.id, "--body-file", body,
+    ], { env: { ...process.env, GLUEVA_DIR: store.root } });
+    expect(result.exitCode).toBe(0);
+    expect(result.stderr.toString()).toBe("");
+    expect(JSON.parse(result.stdout.toString())).toEqual({
+      id: store.readLedger("codex", parent.id)?.replyId,
+      state: "queued",
+    });
   });
 
   test("an interrupted reply reservation remains unread and resumes idempotently", async () => {
