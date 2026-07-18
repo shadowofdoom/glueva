@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { codexLaunchCommand } from "../src/launcher";
@@ -109,16 +109,23 @@ await Bun.sleep(150);
       "--add-dir=/tmp/one",
       "--add-dir=/tmp/two",
       "--",
-      "Initialize Glueva for this live interactive session. Follow the Glueva SOP: " +
-        "run `glueva status`. If Claude is inactive, report that clearly and do not send or arm. Otherwise, " +
-        "run `glueva receive --json`, handle and close every pending envelope with `glueva reply` or `glueva ack`, then " +
-        "if Codex is active, send exactly one startup pairing check with `--status continue --max-hop 1`, asking Codex to " +
-        "reply once with `--status done`, briefly confirm pairing, and invite the user to give both agents a shared task. " +
-        "Tell the user the check was sent, " +
-        "but claim success only after that reply. If Codex is no longer active, report that and skip the check. " +
-        "Launch `glueva wait` as a harness-tracked background task before going idle. When the terminal reply arrives, " +
-        "close it, re-arm the watcher, tell the user pairing works, and ask what the pair should work on.",
+      "Complete Glueva startup quietly using the installed Glueva skill. Do not narrate commands, explain routine state, " +
+        "or show a checklist. Drain pending envelopes, waiting for the Codex-origin startup check if needed. Reply once as " +
+        "requested, keep `glueva wait` armed as a harness-tracked background task, and claim success only if the reply was " +
+        "delivered or delivered-merged. Output nothing until then; afterward tell the user only `Glueva paired. Ready.` If " +
+        "pairing cannot be confirmed, report the failure in one short line.",
     ]);
+    const pending = readdirSync(join(project, ".glueva", "queues", "claude", "pending"));
+    expect(pending).toHaveLength(1);
+    expect(JSON.parse(readFileSync(join(project, ".glueva", "queues", "claude", "pending", pending[0]), "utf8")))
+      .toMatchObject({
+        from: "codex",
+        to: "claude",
+        status: "continue",
+        maxHop: 1,
+        body: "Glueva startup pairing check. Reply once with `--status done` and body exactly " +
+          "`Glueva paired. Ready.` Keep ingress armed and tell the user only `Glueva paired. Ready.`",
+      });
     expect(readFileSync(join(project, ".glueva", ".gitignore"), "utf8")).toBe("*\n");
     expect(store.readClaudePeer()).toBeNull();
     expect(store.readClaudeLauncher()).toBeNull();

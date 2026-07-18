@@ -105,19 +105,19 @@ Start Codex first from the project you want both sessions to share:
 
 ```bash
 cd /absolute/path/to/project
-glueva codex --yolo
+glueva codex
 ```
 
 Then use a second terminal in the same project to start Claude:
 
 ```bash
 cd /absolute/path/to/project
-glueva claude --yolo
+glueva claude
 ```
 
-On each `glueva claude` launch, Claude sends Codex one bounded pairing check
-after both sessions register. Codex replies once, Claude confirms the round
-trip, and then asks what shared task the pair should work on.
+On each `glueva claude` launch, Glueva delivers one bounded Codex-origin pairing
+check after both sessions register. Claude replies once, then both sessions show
+`Glueva paired. Ready.`
 
 From any terminal in that project, `glueva status` reports the health of the
 registered Claude session, Codex session, ingress watcher, and unread count. The
@@ -155,7 +155,10 @@ glueva codex --continue
 glueva claude --continue
 ```
 
-Add `--yolo` to any of these commands to skip permission checks.
+> **Danger:** `--yolo` disables Claude's permission checks and Codex's approval
+> and sandbox protections. Use it only in a disposable, isolated environment
+> you trust—never on unfamiliar code or where sensitive credentials are
+> available.
 
 The launchers are explicit ownership boundaries. A plain `claude` or `codex`
 session never joins Glueva automatically. Only one live Claude launcher and

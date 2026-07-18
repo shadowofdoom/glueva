@@ -21,15 +21,11 @@ interface ClaudeLaunchOptions {
 }
 
 const CLAUDE_BOOTSTRAP_PROMPT =
-  "Initialize Glueva for this live interactive session. Follow the Glueva SOP: " +
-  "run `glueva status`. If Claude is inactive, report that clearly and do not send or arm. Otherwise, " +
-  "run `glueva receive --json`, handle and close every pending envelope with `glueva reply` or `glueva ack`, then " +
-  "if Codex is active, send exactly one startup pairing check with `--status continue --max-hop 1`, asking Codex to " +
-  "reply once with `--status done`, briefly confirm pairing, and invite the user to give both agents a shared task. " +
-  "Tell the user the check was sent, " +
-  "but claim success only after that reply. If Codex is no longer active, report that and skip the check. " +
-  "Launch `glueva wait` as a harness-tracked background task before going idle. When the terminal reply arrives, " +
-  "close it, re-arm the watcher, tell the user pairing works, and ask what the pair should work on.";
+  "Complete Glueva startup quietly using the installed Glueva skill. Do not narrate commands, explain routine state, " +
+  "or show a checklist. Drain pending envelopes, waiting for the Codex-origin startup check if needed. Reply once as " +
+  "requested, keep `glueva wait` armed as a harness-tracked background task, and claim success only if the reply was " +
+  "delivered or delivered-merged. Output nothing until then; afterward tell the user only `Glueva paired. Ready.` If " +
+  "pairing cannot be confirmed, report the failure in one short line.";
 
 function delay(milliseconds: number): Promise<void> {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
@@ -118,7 +114,7 @@ async function stopProcess(process_: Bun.Subprocess): Promise<void> {
   if (process_.exitCode === null) process_.kill("SIGKILL");
 }
 
-async function reportMissingClaudeRegistration(
+async function bootstrapClaudePairing(
   store: GluevaStore,
   token: string,
   process_: Bun.Subprocess,
@@ -126,7 +122,22 @@ async function reportMissingClaudeRegistration(
   const deadline = Date.now() + 10_000;
   while (Date.now() < deadline && process_.exitCode === null) {
     const peer = store.readClaudePeer();
-    if (peer?.launcherToken === token && store.claudePeerIsLive(peer)) return;
+    if (peer?.launcherToken === token && store.claudePeerIsLive(peer)) {
+      try {
+        await store.createRootEnvelope(
+          "claude",
+          "Glueva startup pairing check. Reply once with `--status done` and body exactly " +
+            "`Glueva paired. Ready.` Keep ingress armed and tell the user only `Glueva paired. Ready.`",
+          "continue",
+          1,
+        );
+      } catch (error) {
+        process.stderr.write(
+          `glueva: could not queue startup pairing check: ${error instanceof Error ? error.message : String(error)}\n`,
+        );
+      }
+      return;
+    }
     await delay(100);
   }
   if (process_.exitCode === null) {
@@ -210,7 +221,7 @@ export async function launchClaude(store: GluevaStore, options: ClaudeLaunchOpti
       stdout: "inherit",
       stderr: "inherit",
     });
-    const registrationCheck = reportMissingClaudeRegistration(store, lease.token, claude);
+    const registrationCheck = bootstrapClaudePairing(store, lease.token, claude);
     const forwardSignal = (signal: NodeJS.Signals) => {
       if (claude?.exitCode === null) claude.kill(signal);
     };
