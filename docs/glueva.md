@@ -29,7 +29,7 @@ From an authenticated checkout of this repository, the equivalent command is:
 ./cli/install.sh
 ```
 
-Use `--version 0.6.0` to pin the binary selected by a checkout-based install,
+Use `--version 0.7.0` to pin the binary selected by a checkout-based install,
 `--install-dir /absolute/path` to choose another PATH directory, or `--cli-only`
 to skip both plugin installations. The default install adds `~/.local/bin` to
 the current shell's startup file when needed; a custom install directory must
@@ -112,7 +112,7 @@ Then use a second terminal in the same project to start Claude:
 
 ```bash
 cd /absolute/path/to/project
-glueva claude --dangerously-skip-permissions
+glueva claude --yolo
 ```
 
 On each `glueva claude` launch, Claude sends Codex one bounded pairing check
@@ -126,36 +126,36 @@ session for plugin safety; outside that session, `active: false` and
 `watcherLive: false` do not describe the overall pair.
 
 The launcher owns Claude's initial prompt so it can drain pending mail and arm
-the ingress watcher before the session first goes idle. Pass Claude flags
-directly after `glueva claude`; write flags with values in long form as one
-token (`--option=value`). For
+the ingress watcher before the session first goes idle. Put Glueva options
+before any native Claude flags, and write native flags with values in long form
+as one token (`--option=value`). For
 multi-value options, repeat the flag once per value, such as
 `--add-dir=/first --add-dir=/second`. Positional prompts, loose flag values,
-value-taking short flags, and non-interactive flags such as `--print` or
+other value-taking short flags, and non-interactive flags such as `--print` or
 `--output-format` are rejected rather than risking a silently unarmed session.
 
-To keep working in the most recent Claude conversation for the project:
+Bare launch commands always start new sessions:
 
 ```bash
-glueva claude --continue --dangerously-skip-permissions
+glueva codex
+glueva claude
 ```
 
-To resume a specific conversation instead:
+Open each native session picker with `--resume`, `--r`, or `-r`:
 
 ```bash
-glueva claude --cwd /absolute/path/to/project \
-  --resume=<claude-session-id> \
-  --dangerously-skip-permissions
+glueva codex --resume
+glueva claude --resume
 ```
 
-Likewise, resume a saved Codex thread with:
+Resume each tool's most recent session with `--continue`, `--c`, or `-c`:
 
 ```bash
-glueva codex \
-  --cwd /absolute/path/to/project \
-  --resume <codex-thread-id> \
-  --yolo
+glueva codex --continue
+glueva claude --continue
 ```
+
+Add `--yolo` to any of these commands to skip permission checks.
 
 The launchers are explicit ownership boundaries. A plain `claude` or `codex`
 session never joins Glueva automatically. Only one live Claude launcher and

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { codexLaunchCommand } from "../src/launcher";
 import { GluevaStore } from "../src/store";
 
 const roots: string[] = [];
@@ -11,25 +12,32 @@ afterEach(() => {
 });
 
 describe("interactive launchers", () => {
-  test("Codex dispatches directly without a launch subcommand", () => {
-    const root = mkdtempSync(join(tmpdir(), "glueva-codex-command-"));
-    roots.push(root);
-    const project = join(root, "project");
-    mkdirSync(join(project, ".git"), { recursive: true });
-
-    const result = Bun.spawnSync([
-      "bun",
-      join(import.meta.dir, "..", "src", "cli.ts"),
-      "codex",
-      "--cwd",
-      project,
-      "--resume",
-      "not-a-uuid",
-      "--yolo",
+  test("Codex launcher maps new, picker, latest, and crash recovery commands", () => {
+    const endpoint = "ws://127.0.0.1:1234";
+    const cwd = "/project";
+    expect(codexLaunchCommand("new", endpoint, cwd, null, false, false)).toEqual([
+      "codex", "--remote", endpoint, "-C", cwd,
     ]);
+    expect(codexLaunchCommand("resume", endpoint, cwd, null, true, false)).toEqual([
+      "codex", "resume", "--dangerously-bypass-approvals-and-sandbox", "--remote", endpoint, "-C", cwd,
+    ]);
+    expect(codexLaunchCommand("continue", endpoint, cwd, null, false, true)).toEqual([
+      "codex", "resume", "--last", "--no-alt-screen", "--remote", endpoint, "-C", cwd,
+    ]);
+    expect(codexLaunchCommand("new", endpoint, cwd, "thread-id", false, false)).toEqual([
+      "codex", "resume", "--remote", endpoint, "-C", cwd, "thread-id",
+    ]);
+  });
 
-    expect(result.exitCode).toBe(1);
-    expect(result.stderr.toString()).toContain("--resume must be a lowercase UUIDv7 thread id");
+  test("launcher aliases reject conflicting session modes", () => {
+    const cli = join(import.meta.dir, "..", "src", "cli.ts");
+    for (const peer of ["codex", "claude"]) {
+      for (const aliases of [["--resume", "--continue"], ["--r", "--c"], ["-r", "-c"]]) {
+        const result = Bun.spawnSync(["bun", cli, peer, ...aliases]);
+        expect(result.exitCode).toBe(1);
+        expect(result.stderr.toString()).toContain("choose either --resume or --continue, not both");
+      }
+    }
   });
 
   test("Claude launcher resolves state from --cwd and forwards flags directly", () => {
@@ -78,8 +86,8 @@ await Bun.sleep(150);
       "claude",
       "--cwd",
       project,
-      "--dangerously-skip-permissions",
-      "--resume=session-id",
+      "--yolo",
+      "--r",
       "--add-dir=/tmp/one",
       "--add-dir=/tmp/two",
     ], {
@@ -94,9 +102,10 @@ await Bun.sleep(150);
 
     expect(result.stderr.toString()).toBe("");
     expect(result.exitCode).toBe(0);
-    expect(JSON.parse(readFileSync(argumentsPath, "utf8"))).toEqual([
+    const launchArguments = JSON.parse(readFileSync(argumentsPath, "utf8")) as string[];
+    expect(launchArguments).toEqual([
+      "--resume",
       "--dangerously-skip-permissions",
-      "--resume=session-id",
       "--add-dir=/tmp/one",
       "--add-dir=/tmp/two",
       "--",
@@ -113,6 +122,23 @@ await Bun.sleep(150);
     expect(readFileSync(join(project, ".glueva", ".gitignore"), "utf8")).toBe("*\n");
     expect(store.readClaudePeer()).toBeNull();
     expect(store.readClaudeLauncher()).toBeNull();
+
+    const continued = Bun.spawnSync(["bun", cli, "claude", "--cwd", project, "-c"], {
+      cwd: root,
+      env: {
+        ...environment,
+        PATH: `${bin}:${environment.PATH ?? ""}`,
+        GLUEVA_CLI_SOURCE: cli,
+        GLUEVA_TEST_ARGS: argumentsPath,
+      },
+    });
+    expect(continued.stderr.toString()).toBe("");
+    expect(continued.exitCode).toBe(0);
+    expect(JSON.parse(readFileSync(argumentsPath, "utf8"))).toEqual([
+      "--continue",
+      "--",
+      launchArguments.at(-1),
+    ]);
   });
 
   test("Claude launcher rejects non-interactive modes and loose positional tokens before spawning Claude", () => {

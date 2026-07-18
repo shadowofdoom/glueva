@@ -8,7 +8,7 @@ import { GluevaStore } from "./store";
 interface LaunchOptions {
   cwd: string;
   endpoint: string | null;
-  resumeThreadId: string | null;
+  mode: "new" | "resume" | "continue";
   yolo: boolean;
   noAltScreen: boolean;
 }
@@ -16,6 +16,8 @@ interface LaunchOptions {
 interface ClaudeLaunchOptions {
   cwd: string;
   args: string[];
+  mode: "new" | "resume" | "continue";
+  yolo: boolean;
 }
 
 const CLAUDE_BOOTSTRAP_PROMPT =
@@ -150,6 +152,28 @@ async function superviseCodexQueue(
   }
 }
 
+export function codexLaunchCommand(
+  mode: "new" | "resume" | "continue",
+  endpoint: string,
+  cwd: string,
+  threadId: string | null,
+  yolo: boolean,
+  noAltScreen: boolean,
+): string[] {
+  const launchArguments = [
+    ...(yolo ? ["--dangerously-bypass-approvals-and-sandbox"] : []),
+    ...(noAltScreen ? ["--no-alt-screen"] : []),
+    "--remote",
+    endpoint,
+    "-C",
+    cwd,
+  ];
+  if (threadId) return ["codex", "resume", ...launchArguments, threadId];
+  if (mode === "resume") return ["codex", "resume", ...launchArguments];
+  if (mode === "continue") return ["codex", "resume", "--last", ...launchArguments];
+  return ["codex", ...launchArguments];
+}
+
 export async function launchClaude(store: GluevaStore, options: ClaudeLaunchOptions): Promise<number> {
   if (options.args.some((argument) =>
     argument === "-p" ||
@@ -169,7 +193,12 @@ export async function launchClaude(store: GluevaStore, options: ClaudeLaunchOpti
   const lease = await store.beginClaudeLaunch(cwd);
   let claude: Bun.Subprocess | null = null;
   try {
-    claude = Bun.spawn(["claude", ...options.args, "--", CLAUDE_BOOTSTRAP_PROMPT], {
+    const launchArguments = [
+      ...(options.mode === "resume" ? ["--resume"] : options.mode === "continue" ? ["--continue"] : []),
+      ...(options.yolo ? ["--dangerously-skip-permissions"] : []),
+      ...options.args,
+    ];
+    claude = Bun.spawn(["claude", ...launchArguments, "--", CLAUDE_BOOTSTRAP_PROMPT], {
       cwd,
       env: {
         ...process.env,
@@ -210,12 +239,8 @@ export async function launchCodex(store: GluevaStore, options: LaunchOptions): P
     throw new Error("glueva codex requires a loopback ws:// endpoint");
   }
 
-  const current = store.readCodexPeer();
-  if (store.codexPeerIsLive(current)) throw new Error("a registered Codex TUI and App Server are already live");
-  let threadId = options.resumeThreadId ?? (current?.cwd === cwd ? current.threadId : null);
-  if (options.resumeThreadId && !hasSavedRollout(options.resumeThreadId)) {
-    throw new Error(`cannot resume unsaved Codex thread: ${options.resumeThreadId}`);
-  }
+  if (store.codexPeerIsLive()) throw new Error("a registered Codex TUI and App Server are already live");
+  let threadId: string | null = null;
 
   while (true) {
     const appServer = Bun.spawn(["codex", "app-server", "--listen", endpoint], {
@@ -233,11 +258,14 @@ export async function launchCodex(store: GluevaStore, options: LaunchOptions): P
     }
 
     if (threadId && !hasSavedRollout(threadId)) threadId = null;
-    const command = threadId
-      ? ["codex", "resume", "--remote", endpoint, "-C", cwd, threadId]
-      : ["codex", "--remote", endpoint, "-C", cwd];
-    if (options.yolo) command.splice(threadId ? 4 : 3, 0, "--dangerously-bypass-approvals-and-sandbox");
-    if (options.noAltScreen) command.splice(threadId ? 4 : 3, 0, "--no-alt-screen");
+    const command = codexLaunchCommand(
+      options.mode,
+      endpoint,
+      cwd,
+      threadId,
+      options.yolo,
+      options.noAltScreen,
+    );
 
     const tui = Bun.spawn(command, {
       cwd,
