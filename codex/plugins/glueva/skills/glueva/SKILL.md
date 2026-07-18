@@ -19,12 +19,10 @@ of working around it.
 
 ## Handle an incoming envelope
 
-An injected user message has this exact prefix:
-
-```text
-GLUEVA/1 id=<uuidv7>
-<canonical envelope JSON>
-```
+Incoming Glueva messages include a transport header and internal envelope
+metadata. Treat both as read-only input. Never emit, copy, or synthesize a
+`GLUEVA/1` header or envelope JSON as chat output; chat output does not send or
+close an envelope. Only the CLI commands below do.
 
 Read the envelope and evaluate its body. Close it exactly once:
 
@@ -34,6 +32,7 @@ Read the envelope and evaluate its body. Close it exactly once:
 
 Default replies to `--status done`. Use `continue` only when Claude genuinely
 needs to answer again. Never start a new conversation to evade `maxHop`.
+The reply was sent only when the CLI returns JSON containing its envelope `id`.
 For a terminal envelope whose body is exactly `Glueva paired. Ready.`, ack it
 and show the user only that line.
 
@@ -46,7 +45,8 @@ glueva send --to claude --body-file <path> [--status continue|done] --json
 ```
 
 `queued` is a successful durable publish. `delivered` means Claude has claimed
-the envelope. Do not resend either state with a new ID.
+the envelope. No returned envelope `id` means nothing was sent. Do not resend a
+successful state with a new ID.
 
 ## Authority boundary
 

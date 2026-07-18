@@ -49,7 +49,7 @@ describe("durable store", () => {
     });
     const version = Bun.spawnSync([link, "--version"]);
     expect(version.exitCode).toBe(0);
-    expect(version.stdout.toString()).toBe("0.8.1\n");
+    expect(version.stdout.toString()).toBe("0.8.2\n");
   });
 
   test("status is session-bound and counts unprocessed mail across queue states", async () => {
@@ -60,7 +60,7 @@ describe("durable store", () => {
       active: false,
       unread: 0,
       watcherLive: false,
-      sessionId: "claude-test-session",
+      sessionId: null,
     });
 
     await store.createRootEnvelope("claude", "hello", "continue", 6);
@@ -87,7 +87,7 @@ describe("durable store", () => {
       "Claude: active\nCodex: active\nWatcher: not armed\nUnread for Claude: 0\n",
     );
     expect(JSON.parse(Bun.spawnSync([cli, "status", "--json"], { env: environment }).stdout.toString()))
-      .toMatchObject({ active: false, watcherLive: false, sessionId: "claude-test-session" });
+      .toMatchObject({ active: false, watcherLive: false, sessionId: null });
   });
 
   test("receive recovers delivered but unprocessed envelopes", async () => {
