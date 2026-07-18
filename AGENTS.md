@@ -24,7 +24,7 @@ Use Bun's `bun:test`; name files `*.test.ts` and describe behavior rather than i
 
 ## Commit & Pull Request Guidelines
 
-Use short, imperative commit subjects such as `Streamline startup pairing`. Keep each commit coherent. Pull requests should explain the user-visible outcome, list verification results, and link relevant issues. Every merged change must bump the release version: use a patch bump for fixes, documentation, and small updates, or a minor bump for new user-visible capabilities. Keep `cli/package.json`, `.claude-plugin/marketplace.json`, the App Server client version, its test expectation, and the pinned version in `docs/glueva.md` synchronized. Release tags must match `cli/package.json` (for example, `v0.8.0`).
+Use short, imperative commit subjects such as `Streamline startup pairing`. Keep each commit coherent. Pull requests should explain the user-visible outcome, list verification results, and link relevant issues. Use merge commits, and do not delete merged local branches. Every merged change must bump the release version: use a patch bump for fixes, documentation, and small updates, or a minor bump for new user-visible capabilities. Keep `cli/package.json`, `.claude-plugin/marketplace.json`, the App Server client version, its test expectation, and the pinned version in `docs/glueva.md` synchronized. Release tags must match `cli/package.json` (for example, `v0.8.1`).
 
 ## Security Notes
 
