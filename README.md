@@ -20,6 +20,9 @@ glueva claude
 Claude then sends Codex one pairing check, confirms the round trip, and asks
 what shared task you want both agents to work on.
 
+Add `--yolo` to either launcher to skip permissions, `--resume` to open its
+session picker, or `--continue` to resume its most recent session.
+
 Update or uninstall later on macOS and Linux:
 
 ```bash
