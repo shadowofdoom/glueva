@@ -34,6 +34,8 @@ Read the envelope and evaluate its body. Close it exactly once:
 
 Default replies to `--status done`. Use `continue` only when Claude genuinely
 needs to answer again. Never start a new conversation to evade `maxHop`.
+For a terminal envelope whose body is exactly `Glueva paired. Ready.`, ack it
+and show the user only that line.
 
 ## Open a conversation
 

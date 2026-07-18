@@ -17,11 +17,16 @@ glueva codex
 glueva claude
 ```
 
-Claude then sends Codex one pairing check, confirms the round trip, and asks
-what shared task you want both agents to work on.
+After Claude registers, Glueva delivers one Codex-origin pairing check. Claude
+replies once, then both sessions show `Glueva paired. Ready.`
 
-Add `--yolo` to either launcher to skip permissions, `--resume` to open its
-session picker, or `--continue` to resume its most recent session.
+Add `--resume` to open either session picker, or `--continue` to resume its
+most recent session.
+
+> **Danger:** `--yolo` disables Claude's permission checks and Codex's approval
+> and sandbox protections. Use it only in a disposable, isolated environment
+> you trust—never on unfamiliar code or where sensitive credentials are
+> available.
 
 Update or uninstall later on macOS and Linux:
 
