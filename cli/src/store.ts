@@ -429,7 +429,7 @@ export class GluevaStore {
       active,
       unread: active ? this.unreadIds("claude").length : 0,
       watcherLive,
-      sessionId: claude?.sessionId ?? null,
+      sessionId: active ? claude!.sessionId : null,
     };
   }
 
