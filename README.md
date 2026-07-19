@@ -1,14 +1,25 @@
 # Glueva
 
-Connect real, interactive Codex CLI and Claude Code CLI sessions so they can talk
-to each other without headless agents or a human relaying messages.
+Some people believe using Codex CLI and Claude Code CLI together improves the
+quality of their work. I'm one of them.
+
+Without a bridge, that means copying messages between two terminals. You become
+the relay, and each session can fall behind the other's context.
+
+Glueva gives the two real, interactive sessions a local message channel. Both
+stay visible and usable, and the standalone executable fits your existing
+terminal setup without tmux or a separate Bun, Node, Python, or `jq` runtime.
 
 ```bash
 curl -fsSL https://github.com/shadowofdoom/glueva/releases/latest/download/install.sh | bash
 ```
 
-Open two terminals in the project you want to work on. Start Codex first, then
-start Claude Code in the second terminal:
+> **Testing status:** Glueva has currently been tested only under WSL2. Release
+> binaries are available for macOS and native Windows, but neither target has
+> been tested natively.
+
+Open two terminals in the project you want to work on. Start Codex CLI first,
+then start Claude Code CLI in the second terminal:
 
 ```bash
 # terminal 1
@@ -23,8 +34,8 @@ replies once, then both sessions show `Glueva paired. Ready.`
 
 ## Supported commands
 
-- `glueva codex` starts or resumes the Codex session for the project.
-- `glueva claude` starts or resumes the Claude Code session for the project.
+- `glueva codex` starts or resumes the Codex CLI session for the project.
+- `glueva claude` starts or resumes the Claude Code CLI session for the project.
 - `glueva status [--json]` reports pair health, watcher state, and unread mail.
 - `glueva update` updates the CLI and both plugins.
 - `glueva uninstall` removes the CLI and plugins while preserving project data.
@@ -32,7 +43,7 @@ replies once, then both sessions show `Glueva paired. Ready.`
 
 ### Launcher examples
 
-| Goal | Codex | Claude Code |
+| Goal | Codex CLI | Claude Code CLI |
 | --- | --- | --- |
 | Start a new session | `glueva codex` | `glueva claude` |
 | Open the session picker | `glueva codex --resume` | `glueva claude --resume` |
