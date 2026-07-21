@@ -14,9 +14,8 @@ terminal setup without tmux or a separate Bun, Node, Python, or `jq` runtime.
 curl -fsSL https://github.com/shadowofdoom/glueva/releases/latest/download/install.sh | bash
 ```
 
-> **Testing status:** Glueva has been tested under WSL2 and native Windows x64.
-> Release binaries are also available for macOS and Windows Arm64, but those
-> targets have not been tested natively.
+> **Testing status:** Glueva has been tested under WSL2, native Windows x64,
+> and macOS. The Windows Arm64 release has not been tested natively.
 
 Open two terminals in the project you want to work on. Start Codex CLI first,
 then start Claude Code CLI in the second terminal:
