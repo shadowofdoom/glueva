@@ -1,6 +1,6 @@
 {
   "name": "glueva",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Live messaging between real Claude Code and Codex sessions.",
   "owner": {
     "name": "Glueva"
